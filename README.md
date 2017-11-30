@@ -2,6 +2,8 @@
 Raven is a Package Manager of Scheme
 ravensc.com
 
+Raven由theschemer.org社区开发和维护
+
 工作原理 仿造node的npm
 
 todo：
