@@ -29,3 +29,30 @@ Raven自身为一段通过Chez Scheme解释器运行的脚本文件。
 3.c 命令 raven uninstall LIBNAME 
 
 从lib文件夹删除库，并将其从package.json文件删除。
+
+4.d 选项 -dev
+
+安装和卸载时选项，区别在于写入json时加入“devDependencies”
+
+package.json样例
+{
+  "name": "",
+  "version": "1.0.0",
+  "description": "",
+  "author": "",
+  "private": true,
+  "scripts": {
+    "dev": "",
+    "build": "",
+    "g": "",
+    "start": "",
+    "precommit": "",
+    "lint": ""
+  },
+  "dependencies": {
+    "LIBNAME": "^0.15.3",
+  },
+  "devDependencies": {
+    "LIBNAME": "^7.1.1",
+  }
+}
