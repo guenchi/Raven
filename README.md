@@ -1,5 +1,6 @@
 # Raven
 Raven is a Package Manager of Scheme
+ravensc.com
 
 工作原理 仿造node的npm
 
@@ -19,3 +20,4 @@ Raven自身为一段通过Chez Scheme解释器运行的脚本文件。
 3.a 命令 raven install
 
 读入命令当前文件夹下的package.json文件，并取得其中 “dependencies” 键 包含依赖散列表。
+除去重复依赖项，从 ravensc.com/库名／版本号 依次下载依赖库到项目下lib文件夹。
