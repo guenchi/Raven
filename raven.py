@@ -2,7 +2,7 @@
 import platform, os, stat, shutil
 from urllib import request
 
-url = "http://www.schemers.org/" # 临时地址
+url = "http://ravensc.com/raven.sc"
 tmp = "raven.tmp"
 sysstr = platform.system()
 target_dir = "/usr/local/bin"
