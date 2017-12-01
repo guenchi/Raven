@@ -8,7 +8,7 @@ sysstr = platform.system()
 target_dir = "/usr/local/bin"
 
 def main():
-    "download Raven file"
+    "download raven file"
     with request.urlopen(url) as web:
         with open(tmp, 'wb') as outfile:
             outfile.write(web.read())
@@ -17,10 +17,11 @@ def main():
     else:
         linux_proc()
     os.remove(tmp)
-    print("Raven已下载完成, 你可以删除此脚本")
+    os.remove("raven.py")
+    print("raven install success")
 
 def win_proc():
-    "windows file proc"
+    "windows file procedure"
     target_dir = "./Raven"
     if not os.path.exists(target_dir):
         os.makedirs(target_dir)
@@ -30,10 +31,10 @@ def win_proc():
     print("脚本已下载至Raven文件夹, 你可以将其移动至任意位置, 最后将Raven路径添加至环境变量PATH")
 
 def linux_proc():
-    "linux file proc"
+    "linux file procedure"
     target_file = os.path.join(target_dir, "raven")
     shutil.copy(tmp, target_file)
-    os.chmod(target_file, stat.S_IEXEC)
+    os.system('chmod a+x /usr/local/bin/raven')
 
 
 if __name__ == "__main__":
