@@ -1,5 +1,5 @@
 # Raven
-Raven is a Package Manager of Scheme
+Raven is a Package Manager for chez Scheme
 
 官方网站 ravensc.com
 
