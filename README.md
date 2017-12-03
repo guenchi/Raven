@@ -57,10 +57,10 @@ Raven自身为一段通过Chez Scheme解释器运行的脚本文件。
     "lint": ""
   },
   "dependencies": {
-    "LIBNAME": "^0.15.3",
+    "LIBNAME": "^0.15.3"
   },
   "devDependencies": {
-    "LIBNAME": "^7.1.1",
+    "LIBNAME": "^7.1.1"
   }
 }
 ```
