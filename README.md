@@ -13,21 +13,19 @@ Raven原理：仿造node的npm
 
 
   for use Raven, make sure the scheme can run by name scheme, if not, 
-   # cd /usr/local/bin 
-   # cp chez scheme
+
+# cd /usr/local/bin 
+# cp chez scheme
 
    Installation:
 
-
-     -Installation by Manuel-
+-Installation by Manuel-
 
    Download the raven.sc
 
    Add the raven.sc in PATH
 
- 
-
-     -Installation Automatically-
+-Installation Automatically-
 
    Linux: 
    $ wget http://ravensc.com/raven.py && sudo ./raven.py   
