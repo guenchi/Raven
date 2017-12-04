@@ -16,6 +16,7 @@ Raven原理：仿造node的npm
   for use Raven, make sure the scheme can run by name scheme, if not, 
 
 \# cd /usr/local/bin 
+
 \# cp chez scheme
 
    Installation:
