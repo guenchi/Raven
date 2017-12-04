@@ -1,17 +1,24 @@
 #!/usr/bin/python3
-import platform, os, stat, shutil
-from urllib import request
+from __future__ import print_function, unicode_literals
+import platform, os, shutil, sys
+if sys.version > '3':
+    from urllib import request
+else:
+    import urllib
+
 
 url = "http://ravensc.com/raven.sc"
 tmp = "raven.tmp"
 sysstr = platform.system()
 target_dir = "/usr/local/bin"
 
+
 def main():
     "download raven file"
-    with request.urlopen(url) as web:
-        with open(tmp, 'wb') as outfile:
-            outfile.write(web.read())
+    if sys.version > '3':
+        request.urlretrieve(url, tmp)
+    else:
+        urllib.urlretrieve(url, tmp)
     if sysstr == "Windows":
         win_proc()
     else:
@@ -27,8 +34,9 @@ def win_proc():
         os.makedirs(target_dir)
     shutil.copy(tmp, os.path.join(target_dir, "raven"))
     with open(os.path.join(target_dir, "raven.bat"), 'w') as outfile:
-            outfile.write("scheme --script raven %1 %2 %3 %4 %5 %6 %7 %8 %9")
-    print("脚本已下载至Raven文件夹, 你可以将其移动至任意位置, 最后将Raven路径添加至环境变量PATH")
+            outfile.write("scheme --script raven %*")
+    print("The script has been downloaded to Raven folder, you can move it to anywhere.\
+    At last, you should add the Raven path into the environment variable PATH")
 
 def linux_proc():
     "linux file procedure"
