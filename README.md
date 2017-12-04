@@ -3,7 +3,8 @@ Raven is a Package Manager for Chez Scheme
 
 官方网站 ravensc.com
 
-注意：Raven项目库建议使用sc作为后缀，表明不加修改即可运行于支持 r6rs 版本实现（未来的r7rs large）以区别于其他后缀的 r5rs / r7rs small实现。
+注意：Raven项目库建议使用sc作为后缀，表明不加修改即可运行于支持 r6rs 
+版本实现（未来的r7rs large）以区别于其他后缀的 r5rs / r7rs small实现。
 
 Raven由theschemer.org社区开发和维护
 
