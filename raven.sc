@@ -469,29 +469,52 @@
   ;;(system cmd)
   (printf "todo: load ~a ~a\n" lib ver)
 )
+
+(define (opt-string? str)
+  ;; 是否为选项
+  (and (> (string-length str) 1)
+       (string-ci=? (substring str 0 1) "-")))
+
+(define (string->opt str)
+  ;; 获取选项
+  (string->symbol (substring str 1 (string-length str))))
+
+(define (clear-directory path)
+  ;; 清空并删除文件夹
+  (for-each 
+    (lambda (p)
+      (let ([p2 (string-append path "/" p)])
+        (if (file-directory? p2)
+          (clear-directory p2)
+          (delete-file p2)
+        )))
+    (directory-list path))
+  (delete-directory path) 
+)
+
 ;;; Helper End
 
 ;;; Command Begin
 
-(define (init)
+(define (init opt libs)
   (define libs (hashtable-ref (check-json) "dependencies" (make-eq-hashtable)))
   (vector-map (lambda (k) (load-lib k (hashtable-ref libs k "^1.0.0"))) (hashtable-keys libs))
   (printf "raven init over\n")
 )
 
-(define (install . libs)
+(define (install opt libs)
   (if (null? libs)
       (printf "please add lib name")
       (map load-lib libs)
   )
 )
 
-(define (uninstall . libs)
+(define (uninstall opt libs)
   (if (null? libs)
     (printf "please add lib name")
     (map 
       (lambda (lib)
-        (printf "todo\n")
+        (clear-directory (string-append "./lib/" lib))
       ) 
       libs)
   )
@@ -504,11 +527,14 @@
   (define args (command-line-arguments))
   (if (null? args)
       (printf "need command init/install/uninstall \n")
-      (case (car args)
-        [("init") (init)]
-        [("install") (install (cdr args))]
-        [("uninstall") (install (cdr args))]
-        [else (display "invalid command")]
+      (let-values 
+        ([(opts cmds) (partition opt-string? args)])
+        (case (car cmds)
+          [("init") (init opts (cdr cmds))]
+          [("install") (install opts (cdr cmds))]
+          [("uninstall") (uninstall opts (cdr cmds))]
+          [else (display "invalid command")]
+        )
       )
   )
 )
