@@ -344,21 +344,10 @@
   ;; Public procedures
   ;;
 
-  ;(define* (json->scm #:optional (port (current-input-port)))
-  ;  "Parse a JSON document into native. Takes one optional argument,
-  ;   @var{port}, which defaults to the current input port from where the JSON
-  ;   document is read."
-  ;  (json-read (make-json-parser port)))
-
-  (define json->scm
+   (define json->scm
     (case-lambda
       [() (json->scm (current-input-port))]
       [(port) (json-read (make-json-parser port))]))
-
-  ;(define* (json-string->scm str)
-  ;  "Parse a JSON document into native. Takes a string argument,
-  ;   @var{str}, that contains the JSON document."
-  ;  (call-with-input-string str (lambda (p) (json->scm p))))
 
   (define-structure (json-parser port))
 
@@ -444,7 +433,7 @@
   (define (build-object-pair p port escape pretty level)
     (display (indent-string pretty level) port)
     (json-build-string (car p) port escape)
-    (display " : " port)
+    (display ": " port)
     (json-build (cdr p) port escape pretty level))
 
   (define (build-newline port pretty)
@@ -453,7 +442,7 @@
   (define (indent-string pretty level)
     ;(if pretty (format #f "~v_" (* 4 level)) "")
     ; fix for chez:
-    (if pretty (format #f "~vA" (* 4 level) "") ""))
+    (if pretty (format #f "~vA" (* 2 level) "") ""))
 
   ;;
   ;; Main builder functions
@@ -518,8 +507,8 @@
     (display "]" port))
 
   (define (json-build-object scm port escape pretty level)
-    (build-newline port pretty)
-    (format port "~A{" (indent-string pretty level))
+    ;(build-newline port pretty)
+    (format port "~A{" (indent-string #f level))
     (build-newline port pretty)
     (let ((pairs scm))
       (unless (null? pairs)
@@ -536,6 +525,11 @@
     (hash-table-map hash-table (lambda (k v)
                                 (cons k v))))
 
+  (define (hashtable->list hashtable)
+    (map (lambda (k)
+           (cons k (hashtable-ref hashtable k "")))
+         (reverse (vector->list (hashtable-keys hashtable)))))
+
   (define (json-build scm port escape pretty level)
     (cond
     ((null? scm) (json-build-null port))
@@ -547,20 +541,13 @@
     ((list? scm) (json-build-array scm port escape pretty level))
     ((hash-table? scm)
       (json-build-object (hash-table->list scm) port escape pretty level))
+    ((hashtable? scm)
+      (json-build-object (hashtable->list scm) port escape pretty level))
     (else (error 'json-invalid "json invalid"))))
 
   ;;
   ;; Public procedures
   ;;
-
-  ;(define* (scm->json scm
-  ;                    #:optional (port (current-output-port))
-  ;                    #:key (escape #f) (pretty #f))
-  ;  "Creates a JSON document from native. The argument @var{scm} contains
-  ;   the native value of the JSON document. Takes one optional argument,
-  ;   @var{port}, which defaults to the current output port where the JSON
-  ;   document will be written."
-  ;  (json-build scm port escape pretty 0))
 
   (define scm->json
     (case-lambda
@@ -568,20 +555,13 @@
       [(scm port) (scm->json scm port #f #f)]
       [(scm port escape pretty) (json-build scm port escape pretty 0)]))
 
-  ;(define* (scm->json-string scm #:key (escape #f) (pretty #f))
-  ;  "Creates a JSON document from native into a string. The argument
-  ;   @var{scm} contains the native value of the JSON document."
-  ;  (call-with-output-string
-  ;    (lambda (p)
-  ;      (scm->json scm p #:escape escape #:pretty pretty))))
-
   (define scm->json-string-inside
     (case-lambda
       [(scm) (scm->json-string-inside scm #f #f)]
       [(scm escape pretty) (call-with-string-output-port
                             (lambda (p)
                               (scm->json scm p escape pretty)))]))
-  (scm->json-string-inside scm)
+  (scm->json-string-inside scm #t #t)
   ;;; (json builder) ends here
 )
 
@@ -627,12 +607,13 @@
 
 (define (write-file file-name content)
   ;; 写文件
+  (delete-file file-name)
   (let ([p (open-output-file file-name)] [len (string-length content)])
-      (let loop ([idx 0])
-          (when (< idx len)
-              (write-char (string-ref content idx) p)
-              (loop (add1 idx))))
-      (close-output-port p)
+    (let loop ([idx 0])
+      (when (< idx len)
+          (write-char (string-ref content idx) p)
+          (loop (add1 idx))))
+    (close-output-port p)
   )
 )
       
@@ -748,12 +729,14 @@
 ;;; Command Begin
 
 (define (init opt libs)
+  ;; 初始化项目
   (define libs (hashtable-ref (package-json->scm) "dependencies" (make-eq-hashtable)))
   (vector-map (lambda (k) (load-lib k (hashtable-ref libs k "^1.0.0"))) (hashtable-keys libs))
   (printf "raven init over\n")
 )
 
 (define (install opt libs)
+  ;; 安装包
   (if (null? libs)
       (printf "please add lib name")
       (map load-lib libs)
@@ -772,20 +755,61 @@
             (hashtable-delete! (hashtable-ref hs "dependencies" (make-eq-hashtable)) lib) 
           ) 
           libs)
-          (show-hashtable hs)
-          (display (scm->json-string hs))
-          (write-file "./aa.json" (scm->json-string hs))
+          ;(show-hashtable hs)
+          ;(display (scm->json-string hs))
+          (write-file "./package.json" (scm->json-string hs))
       )
-      (printf "please raven init before uninstall")
+      (printf "please raven init before uninstall\n")
     )
+  )
+)
+
+(define (self-command . args)
+  ;; 自定义命令
+  (if (file-exists? "./package.json")
+    (let ([hs (package-json->scm)])
+      (if (and (hashtable-contains? hs "scripts") (hashtable-contains? (hashtable-ref hs "scripts" #f) (car args)))
+        (system (hashtable-ref (hashtable-ref hs "scripts" #f) (car args) #f))
+        (printf "invaild command\n")
+      )
+    )
+    (printf "please raven init before uninstall\n")
   )
 )
 
 ;;; Command End
 
+;;; Info Begin
+
+(define version '0.0.1)
+
+(define package "lib")
+
+;;; Info End
+
+;;; Main Begin
+
+(define (init)
+  ;; 初始化环境
+  (define env-separator
+    (case (machine-type)
+      ((a6nt i3nt ta6nt ti3nt) ";")
+      (else ":")
+    ))
+  ;; 添加临时环境变量
+  (putenv "CHEZSCHEMELIBDIRS" 
+    (string-append 
+      (getenv "CHEZSCHEMELIBDIRS") env-separator 
+      "./lib" env-separator 
+      "./package" env-separator 
+      "." env-separator 
+      (getenv "PATH")))
+)
+
 (define (raven)
   ;; raven 启动方法
   (define args (command-line-arguments))
+  (init)
   (if (null? args)
       (printf "need command init/install/uninstall \n")
       (let-values 
@@ -794,11 +818,13 @@
           [("init") (init opts (cdr cmds))]
           [("install") (install opts (cdr cmds))]
           [("uninstall") (uninstall opts (cdr cmds))]
-          [else (display "invalid command")]
+          [else (apply self-command cmds)]
         )
       )
   )
 )
+
+;;; Main End
 
 ;; start
 (raven)
