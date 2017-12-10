@@ -1,10 +1,34 @@
 ":"; exec scheme --script "$0" "$@"
 
-
 ;;; JSON Function Begin
 
 (define (json-string->scm str)
-  ;; json-string->hashtable
+  ;;; (json parser) --- Guile JSON implementation.
+
+  ;; Copyright (C) 2013 Aleix Conchillo Flaque <aconchillo@gmail.com>
+  ;;
+  ;; This file is part of guile-json.
+  ;;
+  ;; guile-json is free software; you can redistribute it and/or
+  ;; modify it under the terms of the GNU Lesser General Public
+  ;; License as published by the Free Software Foundation; either
+  ;; version 3 of the License, or (at your option) any later version.
+  ;;
+  ;; guile-json is distributed in the hope that it will be useful,
+  ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  ;; Lesser General Public License for more details.
+  ;;
+  ;; You should have received a copy of the GNU Lesser General Public
+  ;; License along with guile-json; if not, write to the Free Software
+  ;; Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+  ;; 02110-1301 USA
+
+  ;;; Commentary:
+
+  ;; JSON module for Guile
+
+  ;;; Code:
 
   ;;
   ;; Parser record and read helpers
@@ -320,13 +344,7 @@
   ;; Public procedures
   ;;
 
-  ;(define* (json->scm #:optional (port (current-input-port)))
-  ;  "Parse a JSON document into native. Takes one optional argument,
-  ;   @var{port}, which defaults to the current input port from where the JSON
-  ;   document is read."
-  ;  (json-read (make-json-parser port)))
-
-  (define json->scm
+   (define json->scm
     (case-lambda
       [() (json->scm (current-input-port))]
       [(port) (json-read (make-json-parser port))]))
@@ -334,6 +352,217 @@
   (define-structure (json-parser port))
 
   (json->scm (open-input-string str))
+  ;;; (json parser) ends here
+)
+
+(define (scm->json-string scm)
+  ;;; (json builder) --- Guile JSON implementation.
+
+  ;; Copyright (C) 2013 Aleix Conchillo Flaque <aconchillo@gmail.com>
+  ;; Copyright (C) 2015,2016 Jan Nieuwenhuizen <janneke@gnu.org>
+  ;;
+  ;; This file is part of guile-json.
+  ;;
+  ;; guile-json is free software; you can redistribute it and/or
+  ;; modify it under the terms of the GNU Lesser General Public
+  ;; License as published by the Free Software Foundation; either
+  ;; version 3 of the License, or (at your option) any later version.
+  ;;
+  ;; guile-json is distributed in the hope that it will be useful,
+  ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  ;; Lesser General Public License for more details.
+  ;;
+  ;; You should have received a copy of the GNU Lesser General Public
+  ;; License along with guile-json; if not, write to the Free Software
+  ;; Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+  ;; 02110-1301 USA
+
+  ;;; Commentary:
+
+  ;; JSON module for Guile
+
+  ;;; Code:
+
+  ;;
+  ;; String builder helpers
+  ;;
+
+  (define (unicode->string unicode)
+    (format #f "\\u~4,'0x" unicode))
+
+  (define (char->unicode-string c)
+    (let ((unicode (char->integer c)))
+      (if (< unicode 32)
+          (unicode->string unicode)
+          (string c))))
+
+  (define (u8v-2->unicode bv)
+    (let ((bv0 (bytevector-u8-ref bv 0))
+          (bv1 (bytevector-u8-ref bv 1)))
+      (+ (ash (logand bv0 #b00011111) 6)
+        (logand bv1 #b00111111))))
+
+  (define (u8v-3->unicode bv)
+    (let ((bv0 (bytevector-u8-ref bv 0))
+          (bv1 (bytevector-u8-ref bv 1))
+          (bv2 (bytevector-u8-ref bv 2)))
+      (+ (ash (logand bv0 #b00001111) 12)
+        (ash (logand bv1 #b00111111) 6)
+        (logand bv2 #b00111111))))
+
+  (define (build-char-string c)
+    (let* ((bv (string->utf8 (string c)))
+          (len (bytevector-length bv)))
+      (cond
+      ;; A single byte UTF-8
+      ((eq? len 1) (char->unicode-string c))
+      ;; If we have a 2 or 3 byte UTF-8 we need to output it as \uHHHH
+      ((or (eq? len 2) (eq? len 3))
+        (let ((unicode (if (eq? len 2)
+                          (u8v-2->unicode bv)
+                          (u8v-3->unicode bv))))
+          (unicode->string unicode)))
+      ;; Anything else should wrong, hopefully.
+      (else (error 'json-invalid "json invalid")))))
+
+  ;;
+  ;; Object builder functions
+  ;;
+
+  (define (build-object-pair p port escape pretty level)
+    (display (indent-string pretty level) port)
+    (json-build-string (car p) port escape)
+    (display ": " port)
+    (json-build (cdr p) port escape pretty level))
+
+  (define (build-newline port pretty)
+    (cond (pretty (newline port))))
+
+  (define (indent-string pretty level)
+    ;(if pretty (format #f "~v_" (* 4 level)) "")
+    ; fix for chez:
+    (if pretty (format #f "~vA" (* 2 level) "") ""))
+
+  ;;
+  ;; Main builder functions
+  ;;
+
+  (define (json-build-null port)
+    (display "null" port))
+
+  (define (json-build-boolean scm port)
+    (display (if scm "true" "false") port))
+
+  (define (json-build-number scm port)
+    (if (and (rational? scm) (not (integer? scm)))
+        (display (number->string (exact->inexact scm)) port)
+        (display (number->string scm) port)))
+
+  (define (->string x)
+    (cond ((char? x) (make-string 1 x))
+          ((number? x) (number->string x))
+          ((symbol? x) (symbol->string x))
+          (else x)))
+
+  ;(define (atom? x)
+  ;  (or (char? x) (number? x) (string? x) (symbol? x)))
+
+  (define (json-alist? x)
+    (and (pair? x)
+        (let loop ((x x))
+          (or (null? x)
+              (null? (car x))
+              (and (pair? (car x)) (atom? (caar x))
+                    (loop (cdr x)))))))
+
+  (define (json-build-string scm port escape)
+    (display "\"" port)
+    (display
+    (list->string
+      (fold-right append '()
+                  (map
+                  (lambda (c)
+                    (case c
+                      ((#\" #\\) `(#\\ ,c))
+                      ((#\backspace) '(#\\ #\b))
+                      ((#\page) '(#\\ #\f))
+                      ((#\newline) '(#\\ #\n))
+                      ((#\return) '(#\\ #\r))
+                      ((#\tab) '(#\\ #\t))
+                      ((#\/) (if escape `(#\\ ,c) (list c)))
+                      (else (string->list (build-char-string c)))))
+                  (string->list (->string scm)))))
+    port)
+    (display "\"" port))
+
+  (define (json-build-array scm port escape pretty level)
+    (display "[" port)
+    (unless (null? scm)
+      (json-build (car scm) port escape pretty (+ level 1))
+      (for-each (lambda (v)
+                  (display ", " port)
+                  (json-build v port escape pretty (+ level 1)))
+                (cdr scm)))
+    (display "]" port))
+
+  (define (json-build-object scm port escape pretty level)
+    ;(build-newline port pretty)
+    (format port "~A{" (indent-string #f level))
+    (build-newline port pretty)
+    (let ((pairs scm))
+      (unless (null? pairs)
+        (build-object-pair (car pairs) port escape pretty (+ level 1))
+        (for-each (lambda (p)
+                    (display "," port)
+                    (build-newline port pretty)
+                    (build-object-pair p port escape pretty (+ level 1)))
+                  (cdr pairs))))
+    (build-newline port pretty)
+    (format port "~A}" (indent-string pretty level)))
+
+  (define (hash-table->list hash-table)
+    (hash-table-map hash-table (lambda (k v)
+                                (cons k v))))
+
+  (define (hashtable->list hashtable)
+    (map (lambda (k)
+           (cons k (hashtable-ref hashtable k "")))
+         (reverse (vector->list (hashtable-keys hashtable)))))
+
+  (define (json-build scm port escape pretty level)
+    (cond
+    ((null? scm) (json-build-null port))
+    ((boolean? scm) (json-build-boolean scm port))
+    ((number? scm) (json-build-number scm port))
+    ((symbol? scm) (json-build-string (symbol->string scm) port escape))
+    ((string? scm) (json-build-string scm port escape))
+    ((json-alist? scm) (json-build-object scm port escape pretty level))
+    ((list? scm) (json-build-array scm port escape pretty level))
+    ((hash-table? scm)
+      (json-build-object (hash-table->list scm) port escape pretty level))
+    ((hashtable? scm)
+      (json-build-object (hashtable->list scm) port escape pretty level))
+    (else (error 'json-invalid "json invalid"))))
+
+  ;;
+  ;; Public procedures
+  ;;
+
+  (define scm->json
+    (case-lambda
+      [(scm) (scm->json scm (current-output-port))]
+      [(scm port) (scm->json scm port #f #f)]
+      [(scm port escape pretty) (json-build scm port escape pretty 0)]))
+
+  (define scm->json-string-inside
+    (case-lambda
+      [(scm) (scm->json-string-inside scm #f #f)]
+      [(scm escape pretty) (call-with-string-output-port
+                            (lambda (p)
+                              (scm->json scm p escape pretty)))]))
+  (scm->json-string-inside scm #t #t)
+  ;;; (json builder) ends here
 )
 
 ;;; JSON Function End
@@ -378,17 +607,18 @@
 
 (define (write-file file-name content)
   ;; 写文件
+  (delete-file file-name)
   (let ([p (open-output-file file-name)] [len (string-length content)])
-      (let loop ([idx 0])
-          (when (< idx len)
-              (write-char (string-ref content idx) p)
-              (loop (add1 idx))))
-      (close-output-port p)
+    (let loop ([idx 0])
+      (when (< idx len)
+          (write-char (string-ref content idx) p)
+          (loop (add1 idx))))
+    (close-output-port p)
   )
 )
       
-(define (check-json)
-  ;; 判断是否存在package.json文件
+(define (package-json->scm)
+  ;; 转化package.json文件为hashtable
   (define file "./package.json")
   (unless (file-exists? file)
     (create-json))
@@ -469,49 +699,132 @@
   ;;(system cmd)
   (printf "todo: load ~a ~a\n" lib ver)
 )
+
+(define (opt-string? str)
+  ;; 是否为选项
+  (and (> (string-length str) 1)
+       (string-ci=? (substring str 0 1) "-")))
+
+(define (string->opt str)
+  ;; 获取选项
+  (string->symbol (substring str 1 (string-length str))))
+
+(define (clear-directory path)
+  ;; 清空并删除文件夹
+  (when (file-directory? path)
+    (for-each 
+      (lambda (p)
+        (let ([p2 (string-append path "/" p)])
+          (if (file-directory? p2)
+            (clear-directory p2)
+            (delete-file p2)
+          )))
+      (directory-list path))
+    (delete-directory path)
+  )
+)
+
 ;;; Helper End
 
 ;;; Command Begin
 
-(define (init)
-  (define libs (hashtable-ref (check-json) "dependencies" (make-eq-hashtable)))
+(define (init opt libs)
+  ;; 初始化项目
+  (define libs (hashtable-ref (package-json->scm) "dependencies" (make-eq-hashtable)))
   (vector-map (lambda (k) (load-lib k (hashtable-ref libs k "^1.0.0"))) (hashtable-keys libs))
   (printf "raven init over\n")
 )
 
-(define (install . libs)
+(define (install opt libs)
+  ;; 安装包
   (if (null? libs)
       (printf "please add lib name")
       (map load-lib libs)
   )
 )
 
-(define (uninstall . libs)
+(define (uninstall opt libs)
+  ;; 卸载包
   (if (null? libs)
     (printf "please add lib name")
-    (map 
-      (lambda (lib)
-        (printf "todo\n")
-      ) 
-      libs)
+    (if (and (file-directory? "./lib") (file-exists? "./package.json"))
+      (let ([hs (package-json->scm)])
+        (map 
+          (lambda (lib)
+            (clear-directory (string-append "./lib/" lib))
+            (hashtable-delete! (hashtable-ref hs "dependencies" (make-eq-hashtable)) lib) 
+          ) 
+          libs)
+          ;(show-hashtable hs)
+          ;(display (scm->json-string hs))
+          (write-file "./package.json" (scm->json-string hs))
+      )
+      (printf "please raven init before uninstall\n")
+    )
+  )
+)
+
+(define (self-command . args)
+  ;; 自定义命令
+  (if (file-exists? "./package.json")
+    (let ([hs (package-json->scm)])
+      (if (and (hashtable-contains? hs "scripts") (hashtable-contains? (hashtable-ref hs "scripts" #f) (car args)))
+        (system (hashtable-ref (hashtable-ref hs "scripts" #f) (car args) #f))
+        (printf "invaild command\n")
+      )
+    )
+    (printf "please raven init before uninstall\n")
   )
 )
 
 ;;; Command End
 
+;;; Info Begin
+
+(define version '0.0.1)
+
+(define package "lib")
+
+;;; Info End
+
+;;; Main Begin
+
+(define (init)
+  ;; 初始化环境
+  (define env-separator
+    (case (machine-type)
+      ((a6nt i3nt ta6nt ti3nt) ";")
+      (else ":")
+    ))
+  ;; 添加临时环境变量
+  (putenv "CHEZSCHEMELIBDIRS" 
+    (string-append 
+      (getenv "CHEZSCHEMELIBDIRS") env-separator 
+      "./lib" env-separator 
+      "./package" env-separator 
+      "." env-separator 
+      (getenv "PATH")))
+)
+
 (define (raven)
   ;; raven 启动方法
   (define args (command-line-arguments))
+  (init)
   (if (null? args)
       (printf "need command init/install/uninstall \n")
-      (case (car args)
-        [("init") (init)]
-        [("install") (install (cdr args))]
-        [("uninstall") (install (cdr args))]
-        [else (display "invalid command")]
+      (let-values 
+        ([(opts cmds) (partition opt-string? args)])
+        (case (car cmds)
+          [("init") (init opts (cdr cmds))]
+          [("install") (install opts (cdr cmds))]
+          [("uninstall") (uninstall opts (cdr cmds))]
+          [else (apply self-command cmds)]
+        )
       )
   )
 )
+
+;;; Main End
 
 ;; start
 (raven)
