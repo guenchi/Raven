@@ -1,4 +1,4 @@
-":"; exec scheme --script "$0" "$@"
+":"; export CHEZSCHEMELIBDIRS=.:./lib:/usr/local/lib:$PATH && exec scheme --script "$0" "$@"
 
 ;;; JSON Function Begin
 
@@ -620,8 +620,7 @@
 (define (package-json->scm)
   ;; 转化package.json文件为hashtable
   (define file "./package.json")
-  (unless (file-exists? file)
-    (create-json))
+  
   (let ([json (read-file file)])
     ;(show-hashtable (json-string->scm json))
     (json-string->scm json)
@@ -693,6 +692,7 @@
 )
 
 (define (load-lib lib ver)
+  ;; 下载单个包
   (unless (file-directory? "./lib") 
     (mkdir "./lib")
   )
@@ -730,8 +730,10 @@
 
 (define (init opt libs)
   ;; 初始化项目
+  (delete-file "./package.json")
+  (create-json)
   (define libs (hashtable-ref (package-json->scm) "dependencies" (make-eq-hashtable)))
-  (vector-map (lambda (k) (load-lib k (hashtable-ref libs k "^1.0.0"))) (hashtable-keys libs))
+  (vector-map (lambda (k) (load-lib k (hashtable-ref libs k #f))) (hashtable-keys libs))
   (printf "raven init over\n")
 )
 
@@ -769,12 +771,17 @@
   (if (file-exists? "./package.json")
     (let ([hs (package-json->scm)])
       (if (and (hashtable-contains? hs "scripts") (hashtable-contains? (hashtable-ref hs "scripts" #f) (car args)))
-        (system (hashtable-ref (hashtable-ref hs "scripts" #f) (car args) #f))
+        (system (string-append (hashtable-ref (hashtable-ref hs "scripts" #f) (car args) #f) " " (apply string-append (cdr args)))
         (printf "invaild command\n")
       )
     )
     (printf "please raven init before uninstall\n")
   )
+)
+
+(define (update)
+  ;; 更新Raven
+  ;; TODO
 )
 
 ;;; Command End
@@ -791,25 +798,18 @@
 
 (define (init)
   ;; 初始化环境
-  (define env-separator
-    (case (machine-type)
-      ((a6nt i3nt ta6nt ti3nt) ";")
-      (else ":")
-    ))
-  ;; 添加临时环境变量
-  (putenv "CHEZSCHEMELIBDIRS" 
-    (string-append 
-      (getenv "CHEZSCHEMELIBDIRS") env-separator 
-      "./lib" env-separator 
-      "./package" env-separator 
-      "." env-separator 
-      (getenv "PATH")))
+  ;; TODO
+)
+
+(defien (check-version)
+  ;; TODO: 运行前检查版本
 )
 
 (define (raven)
   ;; raven 启动方法
   (define args (command-line-arguments))
   (init)
+  (check-version)
   (if (null? args)
       (printf "need command init/install/uninstall \n")
       (let-values 
@@ -818,7 +818,8 @@
           [("init") (init opts (cdr cmds))]
           [("install") (install opts (cdr cmds))]
           [("uninstall") (uninstall opts (cdr cmds))]
-          [else (apply self-command cmds)]
+          [("update") (update)]
+          [else (apply self-command args)]
         )
       )
   )
