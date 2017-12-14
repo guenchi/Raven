@@ -732,8 +732,8 @@
   ;; 初始化项目
   (delete-file "./package.json")
   (create-json)
-  (define libs (hashtable-ref (package-json->scm) "dependencies" (make-eq-hashtable)))
-  (vector-map (lambda (k) (load-lib k (hashtable-ref libs k #f))) (hashtable-keys libs))
+  (let ([libs (hashtable-ref (package-json->scm) "dependencies" (make-eq-hashtable))])
+    (vector-map (lambda (k) (load-lib k (hashtable-ref libs k #f))) (hashtable-keys libs)))
   (printf "raven init over\n")
 )
 
@@ -771,7 +771,11 @@
   (if (file-exists? "./package.json")
     (let ([hs (package-json->scm)])
       (if (and (hashtable-contains? hs "scripts") (hashtable-contains? (hashtable-ref hs "scripts" #f) (car args)))
-        (system (string-append (hashtable-ref (hashtable-ref hs "scripts" #f) (car args) #f) " " (apply string-append (cdr args)))
+        (system 
+          (string-append 
+            (hashtable-ref (hashtable-ref hs "scripts" #f) (car args) #f) 
+            " "
+            (apply string-append (cdr args))))
         (printf "invaild command\n")
       )
     )
@@ -782,6 +786,7 @@
 (define (update)
   ;; 更新Raven
   ;; TODO
+  #f
 )
 
 ;;; Command End
@@ -799,10 +804,12 @@
 (define (init)
   ;; 初始化环境
   ;; TODO
+  #f
 )
 
-(defien (check-version)
+(define (check-version)
   ;; TODO: 运行前检查版本
+  #f
 )
 
 (define (raven)
