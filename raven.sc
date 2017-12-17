@@ -692,10 +692,12 @@
   ;; 下载单个包
   (define file (string-append lib ".tar.gz"))
   (define lib-path (if (null? args) raven-library-path (car args)))
-  (define printf? (if (> (length args) 2) (not (not (cadr args))) #t))
+  (define printf? (if (> (length args) 1) (not (not (cadr args))) #t))
   (define dep-key "dependencies")
   (unless ver
     (set! ver (cmd-arg->version lib ver)))
+  (unless (file-directory? lib-path)
+    (mkdir lib-path))
   (when printf?
     (printf (string-append "loading " lib " " ver " ------\n")))
   (if (and (zero? (system (string-append "cd " lib-path " && curl -s -o " file " " raven-url lib "/" ver ".tar.gz"
@@ -706,7 +708,7 @@
           (let* ([hs (package-json->scm (string-append lib-path "/" lib "/" raven-json-path))]
                  [libs-hs (hashtable-ref hs dep-key #f)]
                  [libs (hashtable-keys libs-hs)])
-              (vector-map (lambda (lib) (load-lib lib (hashtable-ref libs-hs lib #f) (string-append lib-path "/" lib "/" lib-dir) #f)) libs))
+              (vector-map (lambda (lib) (load-lib lib (hashtable-ref libs-hs lib #f) (string-append lib-path "/" lib "/" raven-library-dir) #f)) libs))
         )
         (when printf?
           (printf (string-append "load " lib " " ver " success\n")))
@@ -817,10 +819,14 @@
 
 (define (uninstall opt libs)
   ;; 卸载包
+  (define key "dependencies")
   (if (null? libs)
     (when (ask-Y/n? "uninstall all libraries?")
       (clear-directory raven-library-path)
       (mkdir raven-library-path)
+      (let ([hs (package-json->scm)])
+          (hashtable-set! hs key (make-hashtable string-hash string=?))
+          (write-file raven-json-path (scm->json-string hs)))
       (printf "uninstall all libraries over\n")
     )
     (if (and (file-directory? raven-library-path) (file-exists? raven-json-path))
