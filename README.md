@@ -14,6 +14,8 @@ Nota Bene: We recommand the libraries of Raven use .sc for files.
 For disdiguesh the libraries of r5rs / r7rs small.
 
 
+中文手册：https://guenchi.gitbooks.io/raven-zhcn/content/
+
 Installation Raven
 
 
