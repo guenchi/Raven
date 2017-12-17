@@ -34,7 +34,7 @@ def win_proc():
         os.makedirs(target_dir)
     shutil.copy(tmp, os.path.join(target_dir, "raven"))
     with open(os.path.join(target_dir, "raven.bat"), 'w') as outfile:
-            outfile.write("@echo off\nscheme --script raven %*")
+            outfile.write("@echo off\n@set CHEZSCHEMELIBDIRS=.;./lib;%path%\nscheme --script raven %*")
     print("The script has been downloaded to Raven folder, you can move it to anywhere.\n\
 At last, you should add the Raven path into the environment variable PATH!")
 
