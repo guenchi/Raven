@@ -1,3 +1,5 @@
 .vscode
 *.bat
 *.ss
+package.json
+lib/

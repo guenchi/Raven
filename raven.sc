@@ -1,4 +1,4 @@
-":"; export CHEZSCHEMELIBDIRS=.:./lib:/usr/local/lib:$PATH && exec scheme --script "$0" "$@"
+":"; export CHEZSCHEMELIBDIRS=.:./lib && exec scheme --script $0 "$@";
 
 ;;; JSON Function Begin
 
@@ -617,10 +617,9 @@
   )
 )
       
-(define (package-json->scm)
+(define (package-json->scm . args)
   ;; 转化package.json文件为hashtable
-  (define file "./package.json")
-  
+  (define file (if (null? args) raven-json-path (car args)))
   (let ([json (read-file file)])
     ;(show-hashtable (json-string->scm json))
     (json-string->scm json)
@@ -645,10 +644,8 @@
     \"lint\": \"\"
   },
   \"dependencies\": {
-    \"LIBNAME\": \"^0.15.3\"
   },
   \"devDependencies\": {
-    \"LIBNAME\": \"^7.1.1\"
   }
 }"
 ))
@@ -688,16 +685,39 @@
       (set! private "true")
     )
   )
-  (write-file "./package.json" (make-package-json name version description author private))
+  (write-file raven-json-path (make-package-json name version description author private))
 )
 
-(define (load-lib lib ver)
+(define (load-lib lib ver . args)
   ;; 下载单个包
-  (unless (file-directory? "./lib") 
-    (mkdir "./lib")
+  (define file (string-append lib ".tar.gz"))
+  (define lib-path (if (null? args) raven-library-path (car args)))
+  (define printf? (if (> (length args) 2) (not (not (cadr args))) #t))
+  (define dep-key "dependencies")
+  (unless ver
+    (set! ver (cmd-arg->version lib ver)))
+  (when printf?
+    (printf (string-append "loading " lib " " ver " ------\n")))
+  (if (and (zero? (system (string-append "cd " lib-path " && curl -s -o " file " " raven-url lib "/" ver ".tar.gz"
+            " && tar -xzf " file)))
+           (delete-file (string-append lib-path "/" file)))
+      (begin
+        (when (file-exists? (string-append lib-path "/" lib "/" raven-json-file))
+          (let* ([hs (package-json->scm (string-append lib-path "/" lib "/" raven-json-path))]
+                 [libs-hs (hashtable-ref hs dep-key #f)]
+                 [libs (hashtable-keys libs-hs)])
+              (vector-map (lambda (lib) (load-lib lib (hashtable-ref libs-hs lib #f) (string-append lib-path "/" lib "/" lib-dir) #f)) libs))
+        )
+        (when printf?
+          (printf (string-append "load " lib " " ver " success\n")))
+        #t
+      )
+      (begin
+        (when printf?
+          (printf (string-append "load " lib " " ver " fail\n")))
+        #f
+      )
   )
-  ;;(system cmd)
-  (printf "todo: load ~a ~a\n" lib ver)
 )
 
 (define (opt-string? str)
@@ -724,51 +744,108 @@
   )
 )
 
+(define (system-return cmd)
+  ;; 读取命令行返回内容
+  (define tmp "./##tmp##")
+  (define rst "")
+  (and (zero? (system (string-append cmd " > " tmp)))
+    (file-exists? tmp)
+    (begin (set! rst (read-file tmp)) (delete-file tmp)))
+  rst
+)
+
+(define (cmd-arg->version lib ver)
+  ;; 获取库版本号
+  (if (and ver (not (null? ver)) (char=? (string-ref (car ver) 0) #\@))
+    (substring (car ver) 1 (string-length (car ver)))
+    (system-return (string-append "curl -s " raven-url lib))
+  )
+)
+
+(define (ask-Y/n? tip)
+  ;; 请求输入Y/n
+  (printf (string-append tip "(Y/n)"))
+  (not (string-ci=? (read-line) "n"))
+)
+
+
 ;;; Helper End
 
 ;;; Command Begin
 
-(define (init opt libs)
+(define (init opt args)
   ;; 初始化项目
-  (delete-file "./package.json")
+  (delete-file raven-json-path)
   (create-json)
+  (clear-directory raven-library-path)
+  (mkdir raven-library-path)
   (let ([libs (hashtable-ref (package-json->scm) "dependencies" (make-eq-hashtable))])
     (vector-map (lambda (k) (load-lib k (hashtable-ref libs k #f))) (hashtable-keys libs)))
   (printf "raven init over\n")
 )
 
-(define (install opt libs)
+(define (install opt args)
   ;; 安装包
-  (if (null? libs)
-      (printf "please add lib name")
-      (map load-lib libs)
+  (define key "dependencies")
+  (unless (file-exists? raven-json-path)
+    (init))
+  (unless (file-directory? raven-library-path)
+    (mkdir raven-library-path))
+  (if (null? args)
+      (when (ask-Y/n? "install all libraries?")
+        (let* ([hs (package-json->scm)]
+               [libs-hs (hashtable-ref hs key #f)]
+               [libs (hashtable-keys libs-hs)])
+          (vector-map (lambda (lib) (load-lib lib (hashtable-ref libs-hs lib #f))) libs))
+        (printf "install all libraries over\n")
+      )
+      (let* ([lib (car args)]
+             [ver (cmd-arg->version lib (cdr args))]
+             [rst (load-lib lib ver)]
+             [hs (package-json->scm)])
+        (when rst
+          (unless (hashtable-contains? hs key)
+            (hashtable-set! hs key (make-hashtable string-hash string=?))
+          )
+          (hashtable-set! (hashtable-ref hs key #f) lib ver)
+          (write-file raven-json-path (scm->json-string hs))
+        )
+        (printf "raven install over\n")
+      )
   )
 )
 
 (define (uninstall opt libs)
   ;; 卸载包
   (if (null? libs)
-    (printf "please add lib name")
-    (if (and (file-directory? "./lib") (file-exists? "./package.json"))
+    (when (ask-Y/n? "uninstall all libraries?")
+      (clear-directory raven-library-path)
+      (mkdir raven-library-path)
+      (printf "uninstall all libraries over\n")
+    )
+    (if (and (file-directory? raven-library-path) (file-exists? raven-json-path))
       (let ([hs (package-json->scm)])
         (map 
           (lambda (lib)
             (clear-directory (string-append "./lib/" lib))
             (hashtable-delete! (hashtable-ref hs "dependencies" (make-eq-hashtable)) lib) 
+            (printf "unstall ~a success\n" lib)
           ) 
           libs)
           ;(show-hashtable hs)
           ;(display (scm->json-string hs))
-          (write-file "./package.json" (scm->json-string hs))
+          (write-file raven-json-path (scm->json-string hs))
+          (printf "raven uninstall over\n")
+      
       )
-      (printf "please raven init before uninstall\n")
+      (printf "please raven init first\n")
     )
   )
 )
 
 (define (self-command . args)
   ;; 自定义命令
-  (if (file-exists? "./package.json")
+  (if (file-exists? raven-json-path)
     (let ([hs (package-json->scm)])
       (if (and (hashtable-contains? hs "scripts") (hashtable-contains? (hashtable-ref hs "scripts" #f) (car args)))
         (system 
@@ -779,7 +856,7 @@
         (printf "invaild command\n")
       )
     )
-    (printf "please raven init before uninstall\n")
+    (printf "please run raven init first\n")
   )
 )
 
@@ -793,15 +870,23 @@
 
 ;;; Info Begin
 
-(define version '0.0.1)
+(define raven-version "0.0.9")
 
-(define package "lib")
+(define raven-library-dir "lib")
+
+(define raven-library-path (string-append "./" raven-library-dir))
+
+(define raven-json-file "package.json")
+
+(define raven-json-path (string-append "./" raven-json-file))
+
+(define raven-url "http://ravensc.com/")
 
 ;;; Info End
 
 ;;; Main Begin
 
-(define (init)
+(define (raven-init)
   ;; 初始化环境
   ;; TODO
   #f
@@ -809,14 +894,21 @@
 
 (define (check-version)
   ;; TODO: 运行前检查版本
-  #f
+  (define newest-version (system-content (string-append "curl -s " raven-url "VERSION")))
+  (if (string-ci? lastest-version raven-version)
+    (printf "the newest-version is ~a\n" newest-version)
+    (when (ask-Y/n? "would you want to update now?")
+      (system "")
+      (printf "update over\n")
+    )
+  )
 )
 
 (define (raven)
   ;; raven 启动方法
   (define args (command-line-arguments))
-  (init)
-  (check-version)
+  ;;(raven-init)
+  ;;(check-version)
   (if (null? args)
       (printf "need command init/install/uninstall \n")
       (let-values 
