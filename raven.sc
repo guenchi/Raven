@@ -699,7 +699,7 @@
   (unless (file-directory? lib-path)
     (mkdir lib-path))
   (when printf?
-    (printf (string-append "loading " lib " " ver " ------\n")))
+    (printf (string-append "loading " lib " " ver " ......\n")))
   (if (and (zero? (system (string-append "cd " lib-path " && curl -s -o " file " " raven-url lib "/" ver ".tar.gz"
             " && tar -xzf " file)))
            (delete-file (string-append lib-path "/" file)))
@@ -790,7 +790,7 @@
   ;; 安装包
   (define key "dependencies")
   (unless (file-exists? raven-json-path)
-    (init))
+    (write-file raven-json-path (make-package-json "" "" "" "" "false")))
   (unless (file-directory? raven-library-path)
     (mkdir raven-library-path))
   (if (null? args)
