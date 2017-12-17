@@ -3,7 +3,7 @@ Raven is a Package Manager for Chez Scheme
 
 Officiel Web Site http://ravensc.com
 
-The project Raven is surport by theschemer.org
+The project Raven is surport by http://theschemer.org
 
 The principal developers is: guenchi, chclock of GitHub
 
