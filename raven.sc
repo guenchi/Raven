@@ -757,7 +757,7 @@
 )
 
 (define (cmd-arg->version lib ver)
-  ;; 获取库版本号
+  ;; get lib's version from server
   (if (and ver (not (null? ver)) (char=? (string-ref (car ver) 0) #\@))
     (substring (car ver) 1 (string-length (car ver)))
     (system-return (string-append "curl -s " raven-url lib))
@@ -765,7 +765,7 @@
 )
 
 (define (ask-Y/n? tip)
-  ;; 请求输入Y/n
+  ;; Input request Y/n
   (printf (string-append tip "(Y/n)"))
   (not (string-ci=? (read-line) "n"))
 )
@@ -776,7 +776,7 @@
 ;;; Command Begin
 
 (define (init opt args)
-  ;; 初始化项目
+  ;; Initial
   (delete-file raven-json-path)
   (create-json)
   (clear-directory raven-library-path)
@@ -787,7 +787,7 @@
 )
 
 (define (install opt args)
-  ;; 安装包
+  ;; Installation
   (define key "dependencies")
   (unless (file-exists? raven-json-path)
     (write-file raven-json-path (make-package-json "" "" "" "" "false")))
@@ -818,7 +818,7 @@
 )
 
 (define (uninstall opt libs)
-  ;; 卸载包
+  ;; Uninstallation
   (define key "dependencies")
   (if (null? libs)
     (when (ask-Y/n? "uninstall all libraries?")
@@ -867,7 +867,7 @@
 )
 
 (define (update)
-  ;; 更新Raven
+  ;; update Raven
   ;; TODO
   #f
 )
