@@ -1,4 +1,4 @@
-":"; export CHEZSCHEMELIBDIRS=.:./lib && exec scheme --script $0 "$@";
+":"; export CHEZSCHEMELIBDIRS=.:./lib:/usr/local/lib/raven && exec scheme --script $0 "$@";
 
 ;;; JSON Function Begin
 
@@ -628,32 +628,28 @@
 
 (define (make-package-json name version description author private)
   ;; 默认json内容
-(string-append 
+(format 
 "{
-  \"name\": \"" name "\",
-  \"version\": \"" version "\",
-  \"description\": \"" description "\",
-  \"author\": \"" author "\",
-  \"private\": " private ",
+  \"name\": \"~a\",
+  \"version\": \"~a\",
+  \"description\": \"~a\",
+  \"author\": \"~a\",
+  \"private\": ~a,
   \"scripts\": {
-    \"dev\": \"\",
-    \"build\": \"\",
-    \"g\": \"\",
-    \"start\": \"\",
-    \"precommit\": \"\",
-    \"lint\": \"\"
+    \"script\": \"scheme --script\"
   },
   \"dependencies\": {
   },
   \"devDependencies\": {
   }
 }"
+name version description author private
 ))
 
 (define (read-line)
   ;; 获取控制台输入
   (let loop ([c (read-char)] [lst '()])
-    (if (char=? c #\newline)
+    (if (or (char=? c #\newline) (char=? c #\return))
       (apply string (reverse lst))
       (loop (read-char) (cons c lst)))
   )
@@ -693,30 +689,29 @@
   (define file (string-append lib ".tar.gz"))
   (define lib-path (if (null? args) raven-library-path (car args)))
   (define printf? (if (> (length args) 1) (not (not (cadr args))) #t))
-  (define dep-key "dependencies")
   (unless ver
-    (set! ver (cmd-arg->version lib ver)))
+    (set! ver (newest-version lib)))
   (unless (file-directory? lib-path)
     (mkdir lib-path))
   (when printf?
-    (printf (string-append "loading " lib " " ver " ......\n")))
-  (if (and (zero? (system (string-append "cd " lib-path " && curl -s -o " file " " raven-url lib "/" ver ".tar.gz"
-            " && tar -xzf " file)))
+    (printf (format "loading ~a ~a ......\n" lib ver)))
+  (if (and (zero? (system (format "cd ~a && curl -s -o ~a ~a~a/~a.tar.gz && ~a ~a"
+                            lib-path file raven-url lib ver raven-tar file)))
            (delete-file (string-append lib-path "/" file)))
       (begin
         (when (file-exists? (string-append lib-path "/" lib "/" raven-json-file))
           (let* ([hs (package-json->scm (string-append lib-path "/" lib "/" raven-json-path))]
-                 [libs-hs (hashtable-ref hs dep-key #f)]
+                 [libs-hs (hashtable-ref hs raven-current-key #f)]
                  [libs (hashtable-keys libs-hs)])
               (vector-map (lambda (lib) (load-lib lib (hashtable-ref libs-hs lib #f) (string-append lib-path "/" lib "/" raven-library-dir) #f)) libs))
         )
         (when printf?
-          (printf (string-append "load " lib " " ver " success\n")))
+          (printf (format "load ~a ~a success\n" lib ver)))
         #t
       )
       (begin
         (when printf?
-          (printf (string-append "load " lib " " ver " fail\n")))
+          (printf (format "load ~a ~a fail\n" lib ver)))
         #f
       )
   )
@@ -756,12 +751,26 @@
   rst
 )
 
-(define (cmd-arg->version lib ver)
+(define (newest-lib/version lib)
   ;; get lib's version from server
-  (if (and ver (not (null? ver)) (char=? (string-ref (car ver) 0) #\@))
-    (substring (car ver) 1 (string-length (car ver)))
-    (system-return (string-append "curl -s " raven-url lib))
+  (define splite-index (string-index lib #\@))
+  (if splite-index
+    (let ([name (substring lib 0 splite-index)]
+          [ver (substring lib (1+ splite-index) (string-length lib))])
+      (if (string=? ver "")
+        (cons lib (newest-version lib))
+        (cons lib ver)
+      )
+    )
+    (cons lib (newest-version lib))
   )
+)
+
+(define (newest-version lib)
+  (define ver (system-return (string-append "curl -s " raven-url lib)))
+  (if (string-ci=? ver "#f")
+      #f
+      ver)
 )
 
 (define (ask-Y/n? tip)
@@ -770,6 +779,11 @@
   (not (string-ci=? (read-line) "n"))
 )
 
+(define (string-index str chr)
+  (define len (string-length str))
+  (do ((pos 0 (+ 1 pos)))
+      ((or (>= pos len) (char=? chr (string-ref str pos)))
+       (and (< pos len) pos))))
 
 ;;; Helper End
 
@@ -788,7 +802,6 @@
 
 (define (install opt args)
   ;; Installation
-  (define key "dependencies")
   (unless (file-exists? raven-json-path)
     (write-file raven-json-path (make-package-json "" "" "" "" "false")))
   (unless (file-directory? raven-library-path)
@@ -796,36 +809,42 @@
   (if (null? args)
       (when (ask-Y/n? "install all libraries?")
         (let* ([hs (package-json->scm)]
-               [libs-hs (hashtable-ref hs key #f)]
+               [libs-hs (hashtable-ref hs raven-current-key #f)]
                [libs (hashtable-keys libs-hs)])
           (vector-map (lambda (lib) (load-lib lib (hashtable-ref libs-hs lib #f))) libs))
-        (printf "install all libraries over\n")
-      )
-      (let* ([lib (car args)]
-             [ver (cmd-arg->version lib (cdr args))]
-             [rst (load-lib lib ver)]
-             [hs (package-json->scm)])
-        (when rst
-          (unless (hashtable-contains? hs key)
-            (hashtable-set! hs key (make-hashtable string-hash string=?))
+        (printf "install all libraries over\n"))
+      (let ([hs (package-json->scm)])
+        (for-each
+          (lambda (name)
+            (let ([lib/ver (newest-lib/version name)])
+              (if (cdr lib/ver)
+                (let* ([lib (car lib/ver)]
+                       [ver (cdr lib/ver)]
+                       [rst (load-lib lib ver)])
+                  (when rst
+                    (unless (hashtable-contains? hs raven-current-key)
+                      (hashtable-set! hs raven-current-key (make-hashtable string-hash string=?))
+                    )
+                    (hashtable-set! (hashtable-ref hs raven-current-key #f) lib ver)
+                  ))
+                (printf (format "wrong library name: ~a\n" lib))
+              )
+            )
           )
-          (hashtable-set! (hashtable-ref hs key #f) lib ver)
-          (write-file raven-json-path (scm->json-string hs))
-        )
-        (printf "raven install over\n")
-      )
+          args)
+        (write-file raven-json-path (scm->json-string hs))
+        (printf "raven install over\n"))
   )
 )
 
 (define (uninstall opt libs)
   ;; Uninstallation
-  (define key "dependencies")
   (if (null? libs)
     (when (ask-Y/n? "uninstall all libraries?")
       (clear-directory raven-library-path)
       (mkdir raven-library-path)
       (let ([hs (package-json->scm)])
-          (hashtable-set! hs key (make-hashtable string-hash string=?))
+          (hashtable-set! hs raven-current-key (make-hashtable string-hash string=?))
           (write-file raven-json-path (scm->json-string hs)))
       (printf "uninstall all libraries over\n")
     )
@@ -834,15 +853,12 @@
         (map 
           (lambda (lib)
             (clear-directory (string-append "./lib/" lib))
-            (hashtable-delete! (hashtable-ref hs "dependencies" (make-eq-hashtable)) lib) 
-            (printf "unstall ~a success\n" lib)
+            (hashtable-delete! (hashtable-ref hs raven-current-key (make-eq-hashtable)) lib) 
+            (printf "uninstall ~a success\n" lib)
           ) 
           libs)
-          ;(show-hashtable hs)
-          ;(display (scm->json-string hs))
           (write-file raven-json-path (scm->json-string hs))
           (printf "raven uninstall over\n")
-      
       )
       (printf "please raven init first\n")
     )
@@ -866,12 +882,6 @@
   )
 )
 
-(define (update)
-  ;; update Raven
-  ;; TODO
-  #f
-)
-
 ;;; Command End
 
 ;;; Info Begin
@@ -888,37 +898,56 @@
 
 (define raven-url "http://ravensc.com/")
 
+(define raven-windows? 
+  (case (machine-type)
+    ((a6nt i3nt ta6nt ti3nt) #t)
+    (else #f)))
+
+(define raven-depend-key "dependencies")
+
+(define raven-dev-depend-key "dependencies")
+
+(define raven-current-key raven-depend-key)
+
+(define raven-global-path (if raven-windows? (string-append (or (getenv "UserProfile") "C:") "\\raven") "/usr/local/lib/raven"))
+
+(define raven-global-dir "raven")
+
+(define raven-global? #f)
+
 ;;; Info End
 
 ;;; Main Begin
 
-(define (raven-init)
+(define (raven-init opts)
   ;; 初始化环境
-  ;; TODO
-  #f
+  (when (member "-g" opts)
+    (set! raven-library-dir raven-global-dir)
+    (set! raven-library-path raven-global-path)
+    (set! raven-global? #t))
+  (when (member "-dev" opts)
+    (set! raven-current-key raven-dev-depend-key))
+  (when (member "-clean" opts)
+    (printf "todo: init -clean\n"))
 )
 
 (define (check-version)
-  ;; TODO: 运行前检查版本
-  (define newest-version (system-content (string-append "curl -s " raven-url "VERSION")))
-  (if (string-ci? lastest-version raven-version)
-    (printf "the newest-version is ~a\n" newest-version)
-    (when (ask-Y/n? "would you want to update now?")
-      (system "")
-      (printf "update over\n")
-    )
+  ;; 运行前检查版本
+  (define ver (newest-version "raven"))
+  (when (and ver (not (string=? ver raven-version)))
+    (printf (format "the raven newest version is ~a, you can upgrade it by run 'raven install -g raven'\n" ver))
   )
 )
 
 (define (raven)
   ;; raven 启动方法
   (define args (command-line-arguments))
-  ;;(raven-init)
-  ;;(check-version)
+  (check-version)
   (if (null? args)
       (printf "need command init/install/uninstall \n")
       (let-values 
         ([(opts cmds) (partition opt-string? args)])
+        (raven-init opts)
         (case (car cmds)
           [("init") (init opts (cdr cmds))]
           [("install") (install opts (cdr cmds))]
