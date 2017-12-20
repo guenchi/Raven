@@ -1,5 +1,5 @@
 (("name" . "Raven")
-("vesion" . "0.2.2")
+("vesion" . "0.2.1")
 ("description" . "a package manager for Chez Scheme")
 ("keywords" 
               ("tool" "package manager" "chez-scheme"))
