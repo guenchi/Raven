@@ -51,10 +51,23 @@
 
 (("name" . "Raven")
 ("Vesion" . "0.0.0")
-("keywords" ("util" "package manager" "chez-scheme"))
-("author" ("quenchi" "chclock"))
-("contributors" ("quenchi" "chclock"))
-("private" . "true")
-("scripts" ("dev" . "") ("build" . "")("g" . "")("start" . "")("prcommit" . "")("lint" . ""))
-("dependencies" ("raven" . "1.0.1") ("irreg" . "1.0.9"))
-("devDependencies" ("raven" . "1.0.1") ("irreg" . "1.0.9")))
+("keywords" 
+ 	("util" "package manager" "chez-scheme"))
+("author" 
+ 	("quenchi" "chclock"))
+("contributors" 
+ 	("quenchi" "chclock"))
+("private" . #t)
+("scripts" 
+ 	("dev" . "") 
+	("build" . "")
+ 	("g" . "")
+ 	("start" . "")
+ 	("prcommit" . "")
+ 	("lint" . ""))
+("dependencies" 
+ 	("raven" . "1.0.1")
+ 	("irreg" . "1.0.9"))
+("devDependencies" 
+ 	("raven" . "1.0.1")
+ 	("irreg" . "1.0.9")))
