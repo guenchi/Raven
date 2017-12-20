@@ -12,4 +12,12 @@
 
 ;格式
 
-((a . b)(c .d)(e . f))
+(("name" . "Raven")
+("Vesion" . "0.0.0")
+("keywords" ("util" "package manager" "chez-scheme"))
+("author" ("quenchi" "chclock"))
+("contributors" ("quenchi" "chclock"))
+("priv" . "true")
+("priv" . "true")
+("pend" ("raven" . "1.0.1") ("irreg" . "1.0.9"))
+("deded" . "deded"))
