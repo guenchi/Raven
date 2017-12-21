@@ -2,3 +2,4 @@
 *.ss
 package.json
 lib/
+test.*
