@@ -1,15 +1,17 @@
 (("name" . "Raven")
 ("vesion" . "0.2.1")
 ("description" . "a package manager for Chez Scheme")
+("author" 
+    ("quenchi" "chclock"))
 ("keywords" 
-              ("tool" "package manager" "chez-scheme"))
+    ("tool" "package manager" "chez-scheme"))
 ("license" . "MIT")
 ("homepage" . "http://ravensc.com")
 ("bugs"
-              ("url" . "https://github.com/guenchi/raven/issues"))
+    ("url" . "https://github.com/guenchi/raven/issues"))
 ("contributors" 
- 	      ("quenchi" "chclock"))
+    ("quenchi" "chclock"))
 ("private" . #f)
-("scripts" . "")
-("dependencies" . "")
-("devDependencies" . ""))
+("scripts")
+("dependencies")
+("devDependencies"))
