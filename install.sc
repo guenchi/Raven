@@ -1,4 +1,4 @@
-":"; exec scheme --script $0 "$@";
+
 
 ;;; Info Begin
 
@@ -66,7 +66,7 @@
           (printf "install raven ~a fail\n" ver)
         )
         (if (and 
-              (system (format "cd ~a && curl -s -o raven.tar.gz ~a/~a && tar -xzf raven.tar.gz"
+              (system (format "cd ~a && curl -s -o raven.tar.gz ~a/~a && rm -rf ./raven && mkdir ./raven && tar -xzf raven.tar.gz -C ./raven --strip-components 1"
                                 target-path raven-url ver))
               (delete-file (format "~a/raven.tar.gz" target-path)))
           (begin
@@ -86,3 +86,5 @@
 ;;; Helper End
 
 (install)
+
+(exit)
