@@ -9,8 +9,6 @@
 ("homepage" . "http://ravensc.com")
 ("bugs" 
     ("url" . "https://github.com/guenchi/raven/issues"))
-("contributors" 
-    ("quenchi" "chclock"))
 ("private" . #f)
 ("scripts")
 ("dependencies")
