@@ -408,7 +408,7 @@
 
 ;;; Info Begin
 
-(define raven-version "0.2.2")
+(define raven-url "http://ravensc.com")
 
 (define raven-windows? 
   (case (machine-type)
@@ -439,8 +439,6 @@
 
 (define raven-global? #f)
 
-(define raven-url "http://ravensc.com")
-
 ;;; Info End
 
 ;;; Main Begin
@@ -460,7 +458,7 @@
 (define (check-version)
   ;; 运行前检查版本
   (define ver (newest-version "raven"))
-  (when (and ver (not (string=? ver raven-version)))
+  (when (and ver (not (string=? (asl-ref (package-sc->scm) "version" "") ver)))
     (printf (format "the raven newest version is ~a, you can upgrade it by run 'raven install -g raven'\n" ver))
   )
 )
