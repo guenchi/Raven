@@ -166,37 +166,42 @@
 (define load-lib
   (case-lambda
     ([lib ver] (load-lib lib ver raven-library-path))
-    ([lib ver lib-path] (load-lib lib ver raven-library-path #t))
+    ([lib ver lib-path] (load-lib lib ver lib-path #t))
     ([lib ver lib-path printf?] 
       (begin
-        (define file (format "~a.tar.gz" lib))
         (unless ver
           (set! ver (newest-version lib)))
         (unless (file-directory? lib-path)
           (mkdir lib-path))
+        (clear-directory (format "~a/~a" lib-path lib))
         (when printf?
           (printf (format "loading ~a ~a ......\n" lib ver)))
-        (if raven-global?
+        (if 
           (if raven-windows?
-            (printf "win todo\n")
-            (printf "linux todo\n"))
-          (if raven-windows?
-            (printf "win todo\n")
-            (if (and (zero? (system (format "cd ~a && curl -s -o ~a ~a~a/~a && tar -xzf ~a"
-                                      lib-path file raven-url lib ver file)))
-                  (delete-file (format "~a/~a" lib-path file)))
-              (begin
-                (when (file-exists? (format "~a/~a/~a" lib-path lib raven-pkg-file))
-                  (let* ([asl (package-sc->scm (format "~a/~a/~a" lib-path lib raven-pkg-path))]
-                         [libs-asl (asl-ref asl raven-current-key '())])
-                    (for-each (lambda (lib/ver) (load-lib (car lib/ver) (cdr ver/ver) (format "~a/~a/~a" lib-path lib raven-library-dir) #f)) libs-asl)))
-                 (when printf? (printf (format "load ~a ~a success\n" lib ver)))
-              #t)
-              (begin
-                (when printf? (printf (format "load ~a ~a fail\n" lib ver)))
-              #f)
-            )
-          ) 
+            (and
+                (system (format "cd ~a && curl -s -o ~a.tar.gz ~a/~a/~a && 7z x ~a.tar.gz -y -aoa >> install.log && 7z x ~a.tar -o~a/~a -y -aoa >> install.log"
+                          lib-path lib raven-url lib ver lib lib lib-path lib))
+                (delete-file (format "~a/~a.tar.gz" lib-path lib) #t)
+                (delete-file (format "~a/~a.tar" lib-path lib) #t)
+                (delete-file (format "~a/install.log" lib-path) #t))
+            (and
+              (mkdir (format "~a/~a" lib-path lib))
+              (system (format "cd ~a && curl -s -o ~a.tar.gz ~a/~a/~a && tar -xzf ~a.tar.gz -C ~a/~a"
+                        lib-path lib raven-url lib ver lib lib-path lib))
+              (delete-file (format "~a/~a.tar.gz" lib-path lib) #t)))
+          (begin
+            (when (file-exists? (format "~a/~a/~a" lib-path lib raven-pkg-file))
+              (let* ([asl (package-sc->scm (format "~a/~a/~a" lib-path lib raven-pkg-path))]
+                     [libs-asl (asl-ref asl raven-depend-key '())])
+                (for-each 
+                  (lambda (lib/ver) 
+                    (load-lib (car lib/ver) (cdr ver/ver) (format "~a/~a/~a" lib-path lib raven-library-dir) #f))
+                  libs-asl)))
+            (when printf? (printf (format "load ~a ~a success\n" lib ver)))
+            #t)
+          (begin
+            (when printf? (printf (format "load ~a ~a fail\n" lib ver)))
+            #f)
         )
       )
     )
@@ -220,11 +225,17 @@
         (let ([p2 (string-append path "/" p)])
           (if (file-directory? p2)
             (clear-directory p2)
-            (delete-file p2)
+            (delete-file p2 #t)
           )))
       (directory-list path))
-    (delete-directory path)
+    (delete-directory path #t)
   )
+)
+
+(define (delete-file/directory path)
+  (if (file-directory? path)
+    (clear-directory path)
+    (delete-file path #t))
 )
 
 (define (system-return cmd)
@@ -233,7 +244,8 @@
   (define rst "")
   (and (zero? (system (string-append cmd " > " tmp)))
     (file-exists? tmp)
-    (begin (set! rst (read-file tmp)) (delete-file tmp)))
+    (begin (set! rst (read-file tmp))))
+  (delete-file tmp)
   rst
 )
 
@@ -252,7 +264,7 @@
 
 (define (newest-version lib)
   ;; 获取最新库版本
-  (define ver (system-return (format "curl -s ~a~a" raven-url lib)))
+  (define ver (system-return (format "curl -s ~a/~a" raven-url lib)))
   (if (or (string-ci=? ver "#f") (string-ci=? ver ""))
       #f
       ver)
@@ -286,17 +298,19 @@
 
 (define (install opt libs)
   ;; Installation
-  (unless (file-exists? raven-pkg-path)
+  (unless (or raven-global? (file-exists? raven-pkg-path))
     (write-package-file raven-pkg-path (make-package-asl "" "" "" raven-user #f)))
   (unless (file-directory? raven-library-path)
     (mkdir raven-library-path))
   (if (null? libs)
-      (when (ask-Y/n? "install all libraries?")
-        (let* ([asl (package-sc->scm)]
-               [libs-asl (asl-ref asl raven-current-key '())])
-          (for-each (lambda (l/v) (load-lib (car l/v) (cdr l/v))) libs-asl))
-        (printf "install all libraries over\n"))
-      (let ([asl (package-sc->scm)])
+      (if raven-global?
+        (printf "please add library name\n")
+        (when (ask-Y/n? "install all libraries?")
+          (let* ([asl (package-sc->scm)]
+                 [libs-asl (asl-ref asl raven-current-key '())])
+            (for-each (lambda (l/v) (load-lib (car l/v) (cdr l/v))) libs-asl))
+          (printf "install all libraries over\n")))
+      (if raven-global?
         (for-each
           (lambda (name)
             (let ([lib/ver (newest-lib/version name)])
@@ -305,16 +319,31 @@
                        [ver (cdr lib/ver)]
                        [rst (load-lib lib ver)])
                   (when rst
-                    (unless (asl-ref asl raven-current-key)
-                      (asl-set! asl raven-current-key '()))
-                    (asl-set! asl raven-current-key lib ver)))
-                (printf (format "wrong library name: ~a\n" lib))
-              )
-            )
-          )
-          libs)
-        (write-package-file raven-pkg-path asl)
-        (printf "raven install over\n"))
+                    (if raven-windows?
+                      (printf "~a has been downloaded in ~a\\~a\n" lib target-path lib)
+                      (begin
+                        (delete-file (format "/usr/local/bin/~a" lib) #t)
+                        (system (format "ln -s ~a/~a/~a.sc /usr/local/bin/~a" target-path lib lib lib))
+                        (system (format "chmod +x /usr/local/bin/~a" lib))
+                        (printf "install ~a ~a success\n" lib ver)))))
+                (printf (format "wrong library name: ~a\n" lib)))))
+          libs)  
+        (let ([asl (package-sc->scm)])
+          (for-each
+            (lambda (name)
+              (let ([lib/ver (newest-lib/version name)])
+                (if (cdr lib/ver)
+                  (let* ([lib (car lib/ver)]
+                         [ver (cdr lib/ver)]
+                         [rst (load-lib lib ver)])
+                    (when rst
+                      (unless (asl-ref asl raven-current-key)
+                        (asl-set! asl raven-current-key '()))
+                      (asl-set! asl raven-current-key lib ver)))
+                  (printf (format "wrong library name: ~a\n" lib)))))
+            libs)
+          (write-package-file raven-pkg-path asl)
+          (printf "raven install over\n")))
   )
 )
 
@@ -322,27 +351,58 @@
   ;; Uninstallation
   (if (null? libs)
     (when (ask-Y/n? "uninstall all libraries?")
-      (for-each 
-        (lambda (lib/ver) (clear-directory (format "~a/~a" raven-library-path (car lib/ver))))
-        (asl-ref (package-sc->scm) raven-current-key '()))
-      (let ([asl (package-sc->scm)])
-          (asl-set! asl raven-current-key '())
-          (write-package-file raven-pkg-path asl))
+      (if raven-global?
+        (for-each 
+          (lambda (path) 
+            (printf "deleting ~a/~a ......\n" raven-library-path path)
+            (delete-file/directory (format "~a/~a" raven-library-path path))
+            (unless raven-windows?
+              (delete-file (format "/usr/local/bin/~a" path))))
+          (directory-list raven-library-path))
+        (begin
+          (for-each 
+            (lambda (lib/ver) 
+              (printf "uninstall ~a ~a ......\n" (car lib/ver) (cdr lib/ver))
+              (clear-directory (format "~a/~a" raven-library-path (car lib/ver))))
+            (asl-ref (package-sc->scm) raven-current-key '()))
+          (let ([asl (package-sc->scm)])
+            (asl-set! asl raven-current-key '())
+            (write-package-file raven-pkg-path asl))))
       (printf "uninstall all libraries over\n"))
-    (if (and (file-directory? raven-library-path) (file-exists? raven-pkg-path))
-      (let* ([asl (package-sc->scm)]
-             [libs-asl (asl-ref asl raven-current-key '())])
-        (map 
-          (lambda (lib)
-            (clear-directory (format "~a/~a" raven-library-path lib))
-            (asl-delete! asl raven-current-key lib) 
-            (printf "uninstall ~a success\n" lib)) 
-          libs)
-        (write-package-file raven-pkg-path asl)
-        (printf "raven uninstall over\n"))
-      (printf "please raven init first\n")
-    )
+    ;; uninstall libs
+    (if raven-global?
+      (for-each 
+        (lambda (path) 
+          (printf "deleting ~a/~a ......\n" raven-library-path path)
+          (delete-file/directory (format "~a/~a" raven-library-path path))
+          (unless raven-windows?
+            (delete-file (format "/usr/local/bin/~a" path))))
+        libs)
+      (if (and (file-directory? raven-library-path) (file-exists? raven-pkg-path))
+        (let* ([asl (package-sc->scm)]
+               [libs-asl (asl-ref asl raven-current-key '())])
+          (for-each 
+            (lambda (lib)
+              (clear-directory (format "~a/~a" raven-library-path lib))
+              (asl-delete! asl raven-current-key lib) 
+              (printf "uninstall ~a success\n" lib)) 
+            libs)
+          (write-package-file raven-pkg-path asl)
+          (printf "raven uninstall over\n"))
+        (printf "please raven init first\n")
+      ))
   )
+)
+
+(define (packing opts args)
+  (define ver (asl-ref (package-sc->scm) "version"))
+  (if raven-windows?
+    (and (system 
+      (format "7z a ~a.tar ./ && 7z d ~a.tar lib -r && 7z d ~a.tar .* -r  && 7z d ~a.tar .tar -r && 7z d ~a.tar .tar.gz -r && 7z a ~a.tar.gz ~a.tar"
+                ver ver ver ver ver ver ver))
+      (delete-file (format "./~a.tar" ver)))
+    (system (format "tar -zcf ~a.tar.gz * --exclude lib --exclude \"*.tar.gz\"" ver)))
+  (printf "raven library : ~a.tar.gz is ready\n" ver)
 )
 
 (define (self-command . args)
@@ -361,7 +421,7 @@
 
 ;;; Info Begin
 
-(define raven-version "0.2.1")
+(define raven-version "0.2.2")
 
 (define raven-library-dir "lib")
 
@@ -371,7 +431,7 @@
 
 (define raven-pkg-path (string-append "./" raven-pkg-file))
 
-(define raven-url "http://ravensc.com/")
+(define raven-url "http://localhost:5000.com")
 
 (define raven-windows? 
   (case (machine-type)
@@ -429,6 +489,7 @@
           [("init") (init opts (cdr cmds))]
           [("install") (install opts (cdr cmds))]
           [("uninstall") (uninstall opts (cdr cmds))]
+          [("packing") (packing opts (cdr cmds))]
           [else (apply self-command args)]
         )
       )

@@ -35,7 +35,8 @@
   (define rst "")
   (and (zero? (system (string-append cmd " > " tmp)))
     (file-exists? tmp)
-    (begin (set! rst (read-file tmp)) (delete-file tmp)))
+    (begin (set! rst (read-file tmp))))
+  (delete-file tmp)
   rst
 )
 
@@ -73,7 +74,7 @@
               (delete-file (format "~a/raven.tar" target-path))
               (delete-file (format "~a/install.log" target-path)))
           (begin
-            (printf "The script has been downloaded in ~a\nYou should add this path to the system variables PATH before you enjoy the raven\n" target-path)
+            (printf "The script has been downloaded in ~a\\raven\nYou should add this path to the system variables PATH before you enjoy the raven\n" target-path)
             (printf "install raven ~a success\n" ver))
           (printf "install raven ~a fail\n" ver)
         )
@@ -83,7 +84,7 @@
                                 target-path raven-url ver target-path))
               (delete-file (format "~a/raven.tar.gz" target-path)))
           (begin
-            (delete-file "/usr/local/bin/raven")
+            (delete-file "/usr/local/bin/raven" #t)
             (system "ln -s /usr/local/lib/raven/raven/raven.sc /usr/local/bin/raven")
             (system "chmod +x /usr/local/bin/raven")
             (printf "install raven ~a success\n" ver))
@@ -93,7 +94,7 @@
     )
     (printf "dont't exist raven\n")
   )
-  (delete-file "./install.sc")
+  ;(delete-file "./install.sc")
 )
 
 ;;; Helper End
