@@ -94,7 +94,7 @@
     )
     (printf "dont't exist raven\n")
   )
-  ;(delete-file "./install.sc")
+  (delete-file "./install.sc")
 )
 
 ;;; Helper End
