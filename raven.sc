@@ -39,40 +39,6 @@
           (set-cdr! asl (cddr asl))
           (asl-delete! (cdr asl) x))))))
 
-(define asl-push!
-  ;;增加键值对
-  (lambda (asl x y)
-    (if (null? (cdr asl))
-      (if (null? (car asl))
-        (set-car! asl (cons x y))
-        (set-cdr! asl (cons (cons x y) '())))
-      (push (cdr asl) x y))))
-
-(define asl-pop!
-  ;;出栈
-  (lambda (str)
-    (if (null? (cdr str))
-      (let ((str str)(x (car str))) 
-          (set-car! str '())
-          x)
-      (let loop ((str str)(x (cdr str)))
-          (if (null? (cdr x))
-            (begin    
-              (set-cdr! str '())
-              (car x))
-            (loop (cdr str) (cdr x)))))))
-
-(define asl-out!
-  ;;出队
-  (lambda (str)
-    (let ((str str)(x (car str)))
-      (if (null? (cdr str))
-        (set-car! str '())
-        (begin 
-          (set-car! str (cadr str))
-          (set-cdr! str (cddr str))))
-      x)))				
-
 (define (write-asl-format p asl level)
   (let loop ([ls asl] [space (make-string (* level 4) #\space)])
     (unless (null? ls)
@@ -111,6 +77,16 @@
                   (list->string (reverse lst)))
               (loop (cons c lst) (read-char p))))))
 
+(define (read-line file-name)
+  ;; 读取一行文件
+  (let ((p (open-input-file file-name)))
+      (let loop ((lst '()) (c (read-char p)))
+          (if (or (char-ci=? c #\newline) (char-ci=? c #\return) (eof-object? c))
+              (begin 
+                  (close-input-port p)
+                  (list->string (reverse lst)))
+              (loop (cons c lst) (read-char p))))))
+
 (define (write-file file-name content)
   ;; 写文件
   (delete-file file-name)
@@ -136,11 +112,11 @@
     (cons "devDependencies" '())
 ))
 
-(define read-line
+(define console-readline
   ;; 获取控制台输入
   (case-lambda
-    ([] (read-line #f #f))
-    ([prompt] (read-line prompt #f))
+    ([] (console-readline #f #f))
+    ([prompt] (console-readline prompt #f))
     ([prompt default] (begin
       (when prompt (printf prompt))
       (let loop ([c (read-char)] [lst '()])
@@ -153,11 +129,11 @@
           (loop (read-char) (cons c lst))))))))
 
 (define (create-pkg-file)
-  (define name (read-line "project name: "))
-  (define version (read-line "version(0.1.0): " "0.1.0"))
-  (define description (read-line "description: "))
-  (define author (read-line (format "author(~a): " raven-user) raven-user))
-  (define private (read-line "private?(Y/n): " "y"))
+  (define name (console-readline "project name: "))
+  (define version (console-readline "version(0.1.0): " "0.1.0"))
+  (define description (console-readline "description: "))
+  (define author (console-readline (format "author(~a): " raven-user) raven-user))
+  (define private (console-readline "private?(Y/n): " "y"))
   (set! private (not (string-ci=? private "n")))
   (delete-file raven-pkg-path)
   (write-package-file raven-pkg-path (make-package-asl name version description author private))
@@ -191,7 +167,7 @@
               (delete-file (format "~a/~a.tar.gz" lib-path lib) #t)))
           (begin
             (when (file-exists? (format "~a/~a/~a" lib-path lib raven-pkg-file))
-              (let* ([asl (package-sc->scm (format "~a/~a/~a" lib-path lib raven-pkg-path))]
+              (let* ([asl (package-sc->scm (format "~a/~a/~a" lib-path lib raven-pkg-file))]
                      [libs-asl (asl-ref asl raven-depend-key '())])
                 (for-each 
                   (lambda (lib/ver) 
@@ -249,6 +225,17 @@
   rst
 )
 
+(define (system-return-line cmd)
+  ;; 读取命令行返回内容
+  (define tmp "./##tmp##")
+  (define rst "")
+  (and (zero? (system (string-append cmd " > " tmp)))
+    (file-exists? tmp)
+    (begin (set! rst (read-line tmp))))
+  (delete-file tmp)
+  rst
+)
+
 (define (newest-lib/version lib)
   ;; get lib's version from server
   (define splite-index (string-index lib #\@))
@@ -273,7 +260,7 @@
 (define (ask-Y/n? tip)
   ;; Input request Y/n
   (printf (format "~a(Y/n)" tip))
-  (not (string-ci=? (read-line) "n"))
+  (not (string-ci=? (console-readline) "n"))
 )
 
 (define (string-index str chr)
@@ -320,13 +307,13 @@
                        [rst (load-lib lib ver)])
                   (when rst
                     (if raven-windows?
-                      (printf "~a has been downloaded in ~a\\~a\n" lib target-path lib)
+                      (printf "~a has been downloaded in ~a\\~a\n" lib raven-library-path lib)
                       (begin
                         (delete-file (format "/usr/local/bin/~a" lib) #t)
-                        (system (format "ln -s ~a/~a/~a.sc /usr/local/bin/~a" target-path lib lib lib))
+                        (system (format "ln -s ~a/~a/~a.sc /usr/local/bin/~a" raven-library-path lib lib lib))
                         (system (format "chmod +x /usr/local/bin/~a" lib))
                         (printf "install ~a ~a success\n" lib ver)))))
-                (printf (format "wrong library name: ~a\n" lib)))))
+                (printf (format "wrong library name: ~a\n" (car lib/ver))))))
           libs)  
         (let ([asl (package-sc->scm)])
           (for-each
@@ -340,7 +327,7 @@
                       (unless (asl-ref asl raven-current-key)
                         (asl-set! asl raven-current-key '()))
                       (asl-set! asl raven-current-key lib ver)))
-                  (printf (format "wrong library name: ~a\n" lib)))))
+                  (printf (format "wrong library name: ~a\n" (car lib/ver))))))
             libs)
           (write-package-file raven-pkg-path asl)
           (printf "raven install over\n")))
@@ -423,20 +410,22 @@
 
 (define raven-version "0.2.2")
 
-(define raven-library-dir "lib")
-
-(define raven-library-path (string-append "./" raven-library-dir))
-
-(define raven-pkg-file "package.sc")
-
-(define raven-pkg-path (string-append "./" raven-pkg-file))
-
-(define raven-url "http://localhost:5000.com")
-
 (define raven-windows? 
   (case (machine-type)
     ((a6nt i3nt ta6nt ti3nt) #t)
     (else #f)))
+
+(define raven-user (if raven-windows? (or (getenv "USERNAME") "") (or (getenv "USER")"")))
+
+(define raven-current-path (if raven-windows? (system-return-line "cd") (system-return-line "pwd")))
+
+(define raven-library-dir "lib")
+
+(define raven-library-path (format "~a/~a" raven-current-path raven-library-dir))
+
+(define raven-pkg-file "package.sc")
+
+(define raven-pkg-path (format "~a/~a" raven-current-path raven-pkg-file))
 
 (define raven-depend-key "dependencies")
 
@@ -450,7 +439,7 @@
 
 (define raven-global? #f)
 
-(define raven-user (if raven-windows? (or (getenv "USERNAME") "") (or (getenv "USER")"")))
+(define raven-url "http://ravensc.com")
 
 ;;; Info End
 

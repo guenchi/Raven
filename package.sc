@@ -1,5 +1,5 @@
 (("name" . "Raven")
-("version" . "0.2.1")
+("version" . "0.2.2")
 ("description" . "a package manager for Chez Scheme")
 ("author" 
     ("quenchi" "chclock"))
@@ -7,7 +7,7 @@
     ("tool" "package manager" "chez-scheme"))
 ("license" . "MIT")
 ("homepage" . "http://ravensc.com")
-("bugs"
+("bugs" 
     ("url" . "https://github.com/guenchi/raven/issues"))
 ("contributors" 
     ("quenchi" "chclock"))
