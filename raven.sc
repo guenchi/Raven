@@ -381,7 +381,7 @@
   )
 )
 
-(define (packing opts args)
+(define (pack opts args)
   (define ver (asl-ref (package-sc->scm) "version"))
   (if raven-windows?
     (and (system 
@@ -476,7 +476,7 @@
           [("init") (init opts (cdr cmds))]
           [("install") (install opts (cdr cmds))]
           [("uninstall") (uninstall opts (cdr cmds))]
-          [("packing") (packing opts (cdr cmds))]
+          [("pack") (pack opts (cdr cmds))]
           [else (apply self-command args)]
         )
       )
