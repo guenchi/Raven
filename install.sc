@@ -1,8 +1,8 @@
-
+":"; export CHEZSCHEMELIBDIRS=.:./lib:/usr/local/lib/raven && exec scheme --script $0 "$@";
 
 ;;; Info Begin
 
-(define install-version '0.0.2)
+(define install-version "0.1.0")
 
 (define windows? 
   (case (machine-type)
@@ -43,8 +43,19 @@
   (define ver (system-return (string-append "curl -s " raven-url)))
   (if (or (string-ci=? ver "#f") (string-ci=? ver ""))
       #f
-      ver)
-)
+      ver))
+
+(define (clear-directory path)
+  (when (file-directory? path)
+    (for-each 
+      (lambda (p)
+        (let ([p2 (string-append path "/" p)])
+          (if (file-directory? p2)
+            (clear-directory p2)
+            (delete-file p2)
+          )))
+      (directory-list path))
+    (delete-directory path)))
 
 (define (install)
   (define ver (newest-version))
@@ -52,11 +63,12 @@
     (begin
       (unless (file-directory? target-path)
         (mkdir target-path))
+      (clear-directory (format "~a/raven" target-path))
       (printf "loading raven ~a ......\n" ver)
       (if windows?
         (if (and 
-              (system (format "cd ~a && curl -s -o raven.tar.gz ~a/~a && 7z x raven.tar.gz -y -aoa >> install.log && 7z x raven.tar -y -aoa >> install.log"
-                                target-path raven-url ver))
+              (system (format "cd ~a && curl -s -o raven.tar.gz ~a/~a && 7z x raven.tar.gz -y -aoa >> install.log && 7z x raven.tar -o~a/raven -y -aoa >> install.log"
+                                target-path raven-url ver target-path))
               (delete-file (format "~a/raven.tar.gz" target-path))
               (delete-file (format "~a/raven.tar" target-path))
               (delete-file (format "~a/install.log" target-path)))
@@ -65,9 +77,10 @@
             (printf "install raven ~a success\n" ver))
           (printf "install raven ~a fail\n" ver)
         )
-        (if (and 
-              (system (format "cd ~a && curl -s -o raven.tar.gz ~a/~a && rm -rf ./raven && mkdir ./raven && tar -xzf raven.tar.gz -C ./raven --strip-components 1"
-                                target-path raven-url ver))
+        (if (and
+              (mkdir (format "~a/raven" target-path))
+              (system (format "cd ~a && curl -s -o raven.tar.gz ~a/~a && tar -xzf raven.tar.gz -C ~a/raven"
+                                target-path raven-url ver target-path))
               (delete-file (format "~a/raven.tar.gz" target-path)))
           (begin
             (delete-file "/usr/local/bin/raven")
