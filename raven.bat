@@ -1,3 +1,4 @@
 @echo off
-@set CHEZSCHEMELIBDIRS=.;./lib;%path%
-scheme --script raven.sc %*
+@set CHEZSCHEMELIBDIRS=.;./lib;%UserProfile%\raven
+@set "EXE=%UserProfile%\raven\raven\raven.sc"
+scheme --script %EXE% %*
