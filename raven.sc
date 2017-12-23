@@ -244,8 +244,8 @@
     (let ([name (substring lib 0 splite-index)]
           [ver (substring lib (1+ splite-index) (string-length lib))])
       (if (string=? ver "")
-        (cons lib (newest-version lib))
-        (cons lib ver)))
+        (cons name (newest-version name))
+        (cons name ver)))
     (cons lib (newest-version lib))
   )
 )
