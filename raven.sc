@@ -388,7 +388,7 @@
       (format "7z a ~a.tar ./ && 7z d ~a.tar lib -r && 7z d ~a.tar .* -r  && 7z d ~a.tar .tar -r && 7z d ~a.tar .tar.gz -r && 7z a ~a.tar.gz ~a.tar"
                 ver ver ver ver ver ver ver))
       (delete-file (format "./~a.tar" ver)))
-    (system (format "tar -zcf ~a.tar.gz * --exclude lib --exclude \"*.tar.gz\"" ver)))
+    (system (format "tar -zcf ~a.tar.gz * --exclude lib --exclude \"*.tar.gz\" --exclude \".*\"" ver)))
   (printf "raven library : ~a.tar.gz is ready\n" ver)
 )
 
@@ -439,6 +439,8 @@
 
 (define raven-global? #f)
 
+(define raven-version (asl-ref (package-sc->scm (format "~a/raven/~a" raven-global-path raven-pkg-file)) "version" ""))
+
 ;;; Info End
 
 ;;; Main Begin
@@ -458,7 +460,7 @@
 (define (check-version)
   ;; 运行前检查版本
   (define ver (newest-version "raven"))
-  (when (and ver (not (string=? (asl-ref (package-sc->scm) "version" "") ver)))
+  (when (and ver (not (string=? raven-version ver)))
     (printf (format "the raven newest version is ~a, you can upgrade it by run 'raven install -g raven'\n" ver))
   )
 )
