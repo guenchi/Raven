@@ -1,5 +1,5 @@
 (("name" . "Raven")
-("version" . "0.2.2")
+("version" . "0.2.3")
 ("description" . "a package manager for Chez Scheme")
 ("keywords" 
     ("tool" "package manager" "chez-scheme"))
@@ -10,6 +10,7 @@
 ("bugs" 
     ("url" . "https://github.com/guenchi/raven/issues"))
 ("private" . #f)
-("scripts")
+("scripts"
+    ("run" . "scheme --script"))
 ("dependencies")
 ("devDependencies"))
