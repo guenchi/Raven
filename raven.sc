@@ -282,8 +282,8 @@
         (printf "please add library name\n")
         (let* ([asl (package-sc->scm)]
                [libs-asl (asl-ref asl raven-current-key '())])
-          (for-each (lambda (l/v) (load-lib (car l/v) (cdr l/v))) libs-asl))
-        (printf "install all libraries over\n"))
+          (for-each (lambda (l/v) (load-lib (car l/v) (cdr l/v))) libs-asl)
+          (printf "install all libraries over\n")))
       (if raven-global?
         (for-each
           (lambda (name)
