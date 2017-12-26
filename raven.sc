@@ -169,7 +169,7 @@
                        [libs-asl (asl-ref asl raven-depend-key '())])
                   (for-each 
                     (lambda (lib/ver) 
-                      (load-lib (car lib/ver) (cdr ver/ver) lib-path #t #f))
+                      (load-lib (car lib/ver) (cdr lib/ver) lib-path #t #f))
                     libs-asl)))
               (when printf? (printf (format "load ~a ~a success\n" lib ver)))
               #t)
