@@ -158,14 +158,14 @@
           (if
             (if raven-windows?
               (and
-                  (system (format "cd ~a && curl -s -o ~a.tar.gz ~a/~a/~a && 7z x ~a.tar.gz -y -aoa >> install.log && 7z x ~a.tar -o~a/~a -y -aoa >> install.log"
+                  (system (format "cd ~a && curl -# -o ~a.tar.gz ~a/~a/~a && 7z x ~a.tar.gz -y -aoa >> install.log && 7z x ~a.tar -o~a/~a -y -aoa >> install.log"
                             lib-path lib raven-url lib ver lib lib lib-path lib))
                   (delete-file (format "~a/~a.tar.gz" lib-path lib) #t)
                   (delete-file (format "~a/~a.tar" lib-path lib) #t)
                   (delete-file (format "~a/install.log" lib-path) #t))
               (and
                 (mkdir (format "~a/~a" lib-path lib))
-                (system (format "cd ~a && curl -s -o ~a.tar.gz ~a/~a/~a && tar -xzf ~a.tar.gz -C ~a/~a"
+                (system (format "cd ~a && curl -# -o ~a.tar.gz ~a/~a/~a && tar -xzf ~a.tar.gz -C ~a/~a"
                           lib-path lib raven-url lib ver lib lib-path lib))
                 (delete-file (format "~a/~a.tar.gz" lib-path lib) #t)))
             (begin
