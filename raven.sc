@@ -448,8 +448,31 @@
 )
 
 (define (printf-help)
-  (printf "\nUsage: raven <command> [option]\n\nwhere <command> is one of:\n\tinit, install, uninstall, run, pack\n\nraven <cmd> -h\tquick help on <cmd>\n\n")
+  (printf "\nUsage: raven <command> [option]\n\nwhere <command> is one of:\n\tinit, install, uninstall, run, pack\n\nraven <cmd> -h
+  \tquick help on <cmd>\n\n")
 )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;待添加的帮助功能
+
+（define (init-h)
+    (printf "\nUsage: raven init\n\n"))
+    
+（define (install-h)
+    (printf "\nUsage:\n\nraven install [option]\tinstall the \"dependencies\" of the package.sc\n\t\tOption:\n\t\t\t-clean: clean 
+    the C source files after complie\n\t\t\t-dev: install the \"devDependencies\" instead of \"dependencies\"")) 
+
+（define (uninstall-h)
+    (printf ""))
+
+（define (pack-h)
+    (printf ""))
+
+（define (run-h)
+    (printf ""))
+
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define (check-opts opts)
   (case (car opts)
