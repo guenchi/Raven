@@ -455,7 +455,7 @@
 ;;待添加的帮助功能
 
 （define (init-h)
-    (printf "\nUsage: raven init\n\n"))
+    (printf "\nUsage:\n\nraven init\n\tcreat a file package.sc for a new project"))
     
 （define (install-h)
     (printf "\nUsage:\n\nraven install [option]\n\tinstall the \"dependencies\" of the package.sc\n\nraven install [option] <packageName>\n\tinstall the package of current version and update package.sc\n\nraven install [option] <packageName>@<version>\n\tinstall the package of specified version and update package.sc\n\n[option]:\n\t-clean: clean the C source files after complie\n\t-dev: work with \"devDependencies\" instead of \"dependencies\"\n\t-g: install package as a system software. need root permissions.\n\n"))
