@@ -439,15 +439,16 @@
 )
 
 (define (check-version)
-  ;; 运行前检查版本
+  ;; todo
+  ;; 将ver值改为读取现版本
   (define ver (newest-version "raven"))
   (when ver
-    (printf (format "your raven's version is ~a, the newest version is ~a, you can upgrade it by run 'raven install -g raven'\n" ver ver))
+    (printf (format "Raven version: ~a\n" ver))
   )
 )
 
 (define (printf-help)
-  (printf "help\n")
+  (printf "\nUsage: raven <command> [option]\n\nwhere <command> is one of:\n\tinit, install, uninstall, run, pack\n\nraven <cmd> -h\tquick help on <cmd>\n\n")
 )
 
 (define (check-opts opts)
