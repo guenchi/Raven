@@ -459,8 +459,12 @@
     (printf "\nUsage: raven init\n\n"))
     
 （define (install-h)
-    (printf "\nUsage:\n\nraven install [option]\tinstall the \"dependencies\" of the package.sc\n\t\tOption:\n\t\t\t-clean: clean 
-    the C source files after complie\n\t\t\t-dev: install the \"devDependencies\" instead of \"dependencies\"")) 
+    (printf "\nUsage:\n\nraven install [option]\tinstall the \"dependencies\" of the package.sc\nraven install [option]
+    <packageName>\tinstall the package of current version and update package.sc\nraven install [option] <packageName>@
+    <version>\tinstall the package of specified version and update package.sc\n\n[option]:\n\t-clean: clean the C source
+    files after complie, match only for \"raven install\"\n\t-dev: install the \"devDependencies\" instead of \"dependencies\"\n\t
+    -g: install package as a system software. need root permissions. this command will not write any package.sc\n\n"))
+     
 
 （define (uninstall-h)
     (printf ""))
