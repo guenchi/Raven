@@ -126,8 +126,13 @@
   (define author (console-readline (format "author(~a): " raven-user) raven-user))
   (define private (console-readline "private?(Y/n): " "y"))
   (set! private (not (string-ci=? private "n")))
-  (delete-file raven-pkg-path)
-  (write-package-file raven-pkg-path (make-package-asl name version description author private))
+  (let ([asl (make-package-asl name version description author private)])
+    (when (file-exists? raven-pkg-path)
+      (let ([old-asl (package-sc->scm)])
+        (asl-set! asl raven-depend-key (asl-ref old-asl raven-depend-key '()))
+        (asl-set! asl raven-dev-depend-key (asl-ref old-asl raven-dev-depend-key '())))
+      (delete-file raven-pkg-path))
+    (write-package-file raven-pkg-path asl))
 )
 
 (define load-lib
@@ -264,8 +269,8 @@
 (define (init opt args)
   ;; Initial
   (create-pkg-file)
-  (clear-directory raven-library-path)
-  (mkdir raven-library-path)
+  (unless (file-directory? raven-library-path)
+    (mkdir raven-library-path))
   (let ([libs (asl-ref (package-sc->scm) raven-current-key '())])
     (for-each (lambda (l/v) (load-lib (car l/v) (cdr l/v))) libs))
   (printf "raven init over\n")
