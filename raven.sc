@@ -465,7 +465,7 @@
   (define args (command-line-arguments))
   (raven-init)
   (if (null? args)
-    (printf "need command init/install/uninstall or scripts-command\n")
+    (printf-help)
     (let-values 
       ([(opts cmds) (partition opt-string? args)])
       (init-opts opts)
