@@ -1,7 +1,9 @@
 # Raven
 Raven is a Package Manager for Chez Scheme
 
-Officiel Web Site http://ravensc.com
+Officiel Web Site: http://ravensc.com
+
+Packages List: http://ravensc.com/list
 
 The project Raven is surport by http://theschemer.org
 
