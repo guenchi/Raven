@@ -2,6 +2,5 @@
 *.ss
 package.json
 lib/
-test.*
 *.tar
 *.tar.gz
