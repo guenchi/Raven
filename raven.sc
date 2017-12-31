@@ -220,7 +220,7 @@
 
 (define (system-return cmd)
   ;; 读取命令行返回内容
-  (define tmp "./##tmp##")
+  (define tmp "./._##tmp##")
   (define rst "")
   (and (zero? (system (string-append cmd " > " tmp)))
     (file-exists? tmp)
@@ -266,20 +266,25 @@
 
 ;;; Command Begin
 
-(define (init opt args)
+(define (init opts args)
   ;; Initial
-  (create-pkg-file)
-  (unless (file-directory? raven-library-path)
-    (mkdir raven-library-path))
-  (let ([libs (asl-ref (package-sc->scm) raven-current-key '())])
-    (for-each (lambda (l/v) (load-lib (car l/v) (cdr l/v))) libs))
-  (printf "raven init over\n")
+  (cond
+    ((member "-h" opts) (raven-printf-help "init-h"))
+    (else (begin
+      (create-pkg-file)
+      (unless (file-directory? raven-library-path)
+        (mkdir raven-library-path))
+      (let ([libs (asl-ref (package-sc->scm) raven-current-key '())])
+        (for-each (lambda (l/v) (load-lib (car l/v) (cdr l/v))) libs))
+      (printf "raven init over\n")))
+  )
 )
 
 (define (install opts libs)
   ;; Installation
-  (if (null? opts)
-    (begin
+  (cond
+    ((member "-h" opts) (raven-printf-help "install-h"))
+    (else (begin
       (unless (or raven-global? (file-exists? raven-pkg-path))
         (write-package-file raven-pkg-path (make-package-asl "" "" "" raven-user #f)))
       (unless (file-directory? raven-library-path)
@@ -324,17 +329,15 @@
                       (printf (format "wrong library name: ~a\n" (car lib/ver))))))
                 libs)
               (write-package-file raven-pkg-path asl)
-              (printf "raven install over\n")))))
-    (case (car opts)
-        (("-h") (printf-raven-help "install-h"))
-        (else (printf "invalid command\n")))
+              (printf "raven install over\n"))))))
   )
 )
 
 (define (uninstall opts libs)
   ;; Uninstallation
-  (if (null? opts)
-    (if (null? libs)
+  (cond
+    ((member "-h" opts) (raven-printf-help "uninstall-h"))
+    (else (if (null? libs)
       (printf "please add library name\n")
       ;; uninstall libs
       (if raven-global?
@@ -348,7 +351,7 @@
           libs)
         (if (and (file-directory? raven-library-path) (file-exists? raven-pkg-path))
           (let* ([asl (package-sc->scm)]
-                [libs-asl (asl-ref asl raven-current-key '())])
+                 [libs-asl (asl-ref asl raven-current-key '())])
             (for-each 
               (lambda (name)
                 (printf "deleting ~a/~a ......\n" raven-library-path name)
@@ -360,19 +363,17 @@
             (printf "raven uninstall over\n"))
           (printf "please raven init first\n")
         ))
-    )
-    (case (car opts)
-      (("-h") (printf-raven-help "uninstall-h"))
-      (else (printf "invalid command\n")))
+    ))
   )
 )
 
 (define (pack opts args)
-  (if (null? opts)
-    (let* ([asl (package-sc->scm)]
-           [ver (asl-ref asl "version" "")]
-           [lib (string-downcase (asl-ref asl "name" ""))]
-           [dir (if (null? args) "" (format "cd ~a &&" (car args)))])
+  (cond
+    ((member "-h" opts) (raven-printf-help "pack-h"))
+    (else (let* ([asl (package-sc->scm)]
+                 [ver (asl-ref asl "version" "")]
+                 [lib (string-downcase (asl-ref asl "name" ""))]
+                 [dir (if (null? args) "" (format "cd ~a &&" (car args)))])
       (unless (null? args)
         (write-file (format "~a/~a/~a" raven-current-path (car args) raven-pkg-file) (read-file raven-pkg-path)))
       (if raven-windows?
@@ -383,18 +384,15 @@
         (system (format "~a tar -zcf ~a-~a.tar.gz * --exclude lib --exclude \"*.tar.gz\" --exclude \".*\"" dir lib ver)))
       (unless (null? args)
         (delete-file (format "~a/~a/~a" raven-current-path (car args) raven-pkg-file)))
-      (printf "raven library : ~a-~a.tar.gz is ready\n" lib ver))
-    (case (car opts)
-      (("-h") (printf-raven-help "pack-h"))
-      (else (printf "invalid command\n")))
+      (printf "raven library : ~a-~a.tar.gz is ready\n" lib ver)))
   )
 )
 
 (define (self-command opts cmds)
   ;; 自定义命令
-  (if (and (string-ci=? (car cmds) "run") (not (null? opts)) (string-ci=? (car opts) "-h"))
-    (printf-raven-help "run-h")
-    (if (file-exists? raven-pkg-path)
+  (cond
+    ((and (string-ci=? (car cmds) "run") (member "-h" opts)) (raven-printf-help "run-h"))
+    (else (if (file-exists? raven-pkg-path)
       (let* ([scripts (asl-ref (package-sc->scm) "scripts")]
              [cmd (if scripts (asl-ref scripts (car cmds)) #f)]
              [args (append (cdr cmds) opts)])
@@ -403,8 +401,7 @@
           (if (string-ci=? (car cmds) "run")
             (system (format "scheme --script ~a" (apply string-append args)))
             (printf "invaild command\n"))))
-      (printf "please run raven init first\n")
-    )
+      (printf "please run raven init first\n")))
   )
 )
 
@@ -433,7 +430,7 @@
 
 (define raven-depend-key "dependencies")
 
-(define raven-dev-depend-key "dependencies")
+(define raven-dev-depend-key "devDependencies")
 
 (define raven-current-key raven-depend-key)
 
@@ -465,11 +462,10 @@
 )
 
 (define (check-version)
-  ;; todo
-  ;; 将ver值改为读取现版本
+  ;; 运行前检查版本
   (define ver (newest-version "raven"))
   (when ver
-    (printf (format "Raven version: ~a\n" ver))
+    (printf (format "your raven's version is ~a, the newest version is ~a, you can upgrade it by run 'raven install -g raven'\n" ver ver))
   )
 )
 
@@ -490,18 +486,18 @@
   )
 )
 
-(define printf-raven-help
+(define raven-printf-help
   (case-lambda
-    ([key] (printf-raven-help key ""))
+    ([key] (raven-printf-help key ""))
     ([key default] (printf (asl-ref raven-help key default))))
 )
 
-(define (check-opts opts)
+(define (global-opts opts)
   (case (car opts)
     [("-v" "--version") (check-version)]
-    [("-h" "--help") (printf-raven-help "raven-h")]
+    [("-h" "--help") (raven-printf-help "raven-h")]
     [("--clean") (printf "todo\n")]
-    [else (printf-raven-help "raven-h")]
+    [else (raven-printf-help "raven-h")]
   )
 )
 
@@ -510,12 +506,12 @@
   (define args (command-line-arguments))
   (raven-init)
   (if (null? args)
-    (printf-raven-help "raven-h")
+    (raven-printf-help "raven-h")
     (let-values 
       ([(opts cmds) (partition opt-string? args)])
       (init-opts opts)
       (if (null? cmds)
-        (check-opts opts)
+        (global-opts opts)
         (case (car cmds)
           [("init") (init opts (cdr cmds))]
           [("install") (install opts (cdr cmds))]

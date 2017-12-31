@@ -68,7 +68,7 @@
       (printf "loading raven ~a ......\n" ver)
       (if windows?
         (if (and 
-              (system (format "cd ~a && curl -s -o raven.tar.gz ~a/~a && 7z x raven.tar.gz -y -aoa >> install.log && 7z x raven.tar -o~a/raven -y -aoa >> install.log"
+              (system (format "cd ~a && curl -# -o raven.tar.gz ~a/~a && 7z x raven.tar.gz -y -aoa >> install.log && 7z x raven.tar -o~a/raven -y -aoa >> install.log"
                                 target-path raven-url ver target-path))
               (delete-file (format "~a/raven.tar.gz" target-path))
               (delete-file (format "~a/raven.tar" target-path))
@@ -80,7 +80,7 @@
         )
         (if (and
               (mkdir (format "~a/raven" target-path))
-              (system (format "cd ~a && curl -s -o raven.tar.gz ~a/~a && tar -xzf raven.tar.gz -C ~a/raven"
+              (system (format "cd ~a && curl -# -o raven.tar.gz ~a/~a && tar -xzf raven.tar.gz -C ~a/raven"
                                 target-path raven-url ver target-path))
               (delete-file (format "~a/raven.tar.gz" target-path)))
           (begin
