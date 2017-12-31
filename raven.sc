@@ -152,8 +152,8 @@
           (printf (format "loading ~a ~a ......\n" lib ver)))
         (if (and check? 
               (file-exists? (format "~a/~a/~a" lib-path lib raven-pkg-file))
-              (string-ci>? (asl-ref (package-sc->scm (format "~a/~a/~a" lib-path lib raven-pkg-file)) "version" "0.0.0") ver))
-          (printf "a higher version ~a ~a has existed\nstop loading ~a ~a\n" 
+              (string-ci>=? (asl-ref (package-sc->scm (format "~a/~a/~a" lib-path lib raven-pkg-file)) "version" "0.0.0") ver))
+          (printf "a high version ~a ~a exists\nstop loading ~a ~a\n"
               lib (asl-ref (package-sc->scm (format "~a/~a/~a" lib-path lib raven-pkg-file)) "version") lib ver)
           (if
             (if raven-windows?
