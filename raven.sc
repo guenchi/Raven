@@ -383,6 +383,9 @@
           (delete-file (format "~a/~a.tar" (if (null? args) "." (format"./~a" (car args))) ver)))
         (system (format "~a tar -zcf ~a-~a.tar.gz * --exclude lib --exclude \"*.tar.gz\" --exclude \".*\"" dir lib ver)))
       (unless (null? args)
+        (if raven-windows?
+          (system (format "move ~a\\~a-~a.tar.gz ~a-~a.tar.gz" (car args) lib ver lib ver))
+          (system (format "mv ~a/~a-~a.tar.gz ~a-~a.tar.gz" (car args) lib ver lib ver)))
         (delete-file (format "~a/~a/~a" raven-current-path (car args) raven-pkg-file)))
       (printf "raven library : ~a-~a.tar.gz is ready\n" lib ver)))
   )
