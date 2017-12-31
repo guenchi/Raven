@@ -500,7 +500,7 @@
   (case (car opts)
     [("-v" "--version") (check-version)]
     [("-h" "--help") (printf-raven-help "raven-h")]
-    [("--clean") (printf "todo\n")]
+    [("-clean") (printf "todo\n")]
     [else (printf-raven-help "raven-h")]
   )
 )
