@@ -1,4 +1,4 @@
-";"; exec scheme --script $0 "$@";
+":"; exec scheme --script $0 "$@";
 
 (define (test cmd)
   (printf "~a\n" (make-string 90 #\#))
@@ -18,17 +18,11 @@
 (test "raven install -h")
 (test "raven install irregex")
 (test "raven install -dev json@0.5.1")
-(test "raven install -g raven")
 
 (test "raven uninstall")
 (test "raven uninstall -h")
-(test "raven uninstall raven")
+(test "raven uninstall irregex")
 (test "raven uninstall json -dev")
 
 (test "raven run -h")
-
-
-
-
-
-
+(test "sudo raven install -g raven")
