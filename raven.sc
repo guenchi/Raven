@@ -474,15 +474,15 @@
     ("raven-h"
       . "\nUsage: raven <command> [option]\n\nwhere <command> is one of:\n\tinit, install, uninstall, run, pack\n\nraven <cmd> -h\tquick help on <cmd>\n\n")
     ("init-h"
-      . "\nUsage:\n\nraven init\n\tcreat a file package.sc for a new project")
+      . "\nUsage:\n\nraven init\n\tcreat a file package.sc for a new project\n\n")
     ("install-h"
       . "\nUsage:\n\nraven install [option]\n\tinstall the \"dependencies\" of the package.sc\n\nraven install [option] <packageName>\n\tinstall the package of current version and update package.sc\n\nraven install [option] <packageName>@<version>\n\tinstall the package of specified version and update package.sc\n\n[option]:\n\t-clean: clean the C source files after complie\n\t-dev: work with \"devDependencies\" instead of \"dependencies\"\n\t-g: install package as a system software. need root permissions.\n\n")
     ("uninstall-h"
       . "\nUsage:\n\nraven install [option] <packageName>\n\tremove the package and update package.sc\n\n[option]:\n\t-dev: work with \"devDependencies\" instead of \"dependencies\"\n\t-g: remove a system software. need root permissions.\n\n")
     ("pack-h"
-      . "\nUsage:\n\nraven pack\n\tpacking the current project in file tar.gz")
+      . "\nUsage:\n\nraven pack\n\tpacking the current project in file tar.gz\n\n")
     ("run-h"
-      . "\nUsage:\n\nraven run\n\truning the current project")
+      . "\nUsage:\n\nraven run\n\truning the current project\n\n")
   )
 )
 
