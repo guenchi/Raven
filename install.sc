@@ -1,8 +1,6 @@
-":"; export CHEZSCHEMELIBDIRS=.:./lib:/usr/local/lib/raven && exec scheme --script $0 "$@";
-
 ;;; Info Begin
 
-(define install-version "0.1.0")
+(define install-version "0.2.0")
 
 (define windows? 
   (case (machine-type)
@@ -94,7 +92,6 @@
     )
     (printf "dont't exist raven\n")
   )
-  (delete-file "./install.sc")
 )
 
 ;;; Helper End
