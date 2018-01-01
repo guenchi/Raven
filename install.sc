@@ -1,8 +1,6 @@
-":"; export CHEZSCHEMELIBDIRS=.:./lib:/usr/local/lib/raven && exec scheme --script $0 "$@";
-
 ;;; Info Begin
 
-(define install-version "0.1.0")
+(define install-version "0.2.0")
 
 (define windows? 
   (case (machine-type)
@@ -84,9 +82,7 @@
                                 target-path raven-url ver target-path))
               (delete-file (format "~a/raven.tar.gz" target-path)))
           (begin
-            (let ((path "/usr/local/bin/raven"))
-                (if (file-exists? path)
-                (delete-file path #t)))
+            (delete-file "/usr/local/bin/raven")
             (system "ln -s /usr/local/lib/raven/raven/raven.sc /usr/local/bin/raven")
             (system "chmod +x /usr/local/bin/raven")
             (printf "install raven ~a success\n" ver))
@@ -96,7 +92,6 @@
     )
     (printf "dont't exist raven\n")
   )
-  (delete-file "./install.sc")
 )
 
 ;;; Helper End
