@@ -1,5 +1,5 @@
 (("name" . "Raven")
-("version" . "0.2.9")
+("version" . "0.3.0")
 ("description" . "a package manager for Chez Scheme")
 ("keywords" 
     ("tool" "package manager" "chez-scheme"))
