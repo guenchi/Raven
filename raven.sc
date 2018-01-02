@@ -469,10 +469,7 @@
 
 (define (check-version)
   ;; 运行前检查版本
-  (define ver (newest-version "raven"))
-  (when ver
-    (printf (format "your raven's version is ~a, the newest version is ~a, you can upgrade it by run 'raven install -g raven'\n" ver ver))
-  )
+  (printf (format "Raven version: ~a\n" raven-version))
 )
 
 (define raven-help
