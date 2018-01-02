@@ -171,11 +171,14 @@
             (begin
               (when (file-exists? (format "~a/~a/~a" lib-path lib raven-pkg-file))
                 (let* ([asl (package-sc->scm (format "~a/~a/~a" lib-path lib raven-pkg-file))]
-                       [libs-asl (asl-ref asl raven-depend-key '())])
+                       [libs-asl (asl-ref asl raven-depend-key '())]
+                       [scripts (asl-ref asl "scripts" '())]
+                       [build (asl-ref scripts "build")])
                   (for-each 
                     (lambda (lib/ver) 
                       (load-lib (car lib/ver) (cdr lib/ver) lib-path #t #t))
-                    libs-asl)))
+                    libs-asl)
+                  (when build (system build))))
               (when printf? (printf (format "load ~a ~a success\n" lib ver)))
               #t)
             (begin
