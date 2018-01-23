@@ -19,30 +19,3 @@ Manual: https://guenchi.gitbooks.io/raven/content/
 中文手册：https://guenchi.gitbooks.io/raven-zhcn/content/
 
 
-----------------------------------------------------
-the list of packages which maintenaned by Raven team
-
-
-
-
-agave
-
-box2d-lite
-
-dharmalab
-
-irregex
-
-json
-
-libc
-
-logger
-
-surfage
-
-
-
-
-project adresse: https://github.com/theschemer
-
