@@ -410,7 +410,7 @@
                (format "~a 7z a ~a.tar ./ && 7z d ~a.tar lib -r && 7z d ~a.tar .* -r  && 7z d ~a.tar .tar -r && 7z d ~a.tar .tar.gz -r && 7z a ~a-~a.tar.gz ~a.tar"
                  dir ver ver ver ver ver lib ver ver))
           (delete-file (format "~a/~a.tar" (if (null? args) "." (format"./~a" (car args))) ver)))
-        (system (format "~a tar -zcf ~a-~a.tar.gz * --exclude lib --exclude \"*.tar.gz\" --exclude \".*\"" dir lib ver)))
+        (system (format "~a tar -zcf ~a-~a.tar.gz --exclude lib --exclude \"*.tar.gz\" --exclude \".*\" *" dir lib ver)))
       (unless (null? args)
         (if raven-windows?
           (system (format "move ~a\\~a-~a.tar.gz ~a-~a.tar.gz" (car args) lib ver lib ver))
