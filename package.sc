@@ -4,7 +4,7 @@
 ("keywords" 
     ("tool" "package manager" "chez-scheme"))
 ("author" 
-    ("quenchi" "chclock"))
+    ("guenchi" "chclock"))
 ("license" . "MIT")
 ("homepage" . "http://ravensc.com")
 ("bugs" 

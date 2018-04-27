@@ -16,6 +16,5 @@ For disdiguesh the libraries of r5rs / r7rs small.
 
 Manual: https://guenchi.gitbooks.io/raven/content/
 
-中文手册：https://guenchi.gitbooks.io/raven-zhcn/content/
 
 
