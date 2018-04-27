@@ -1,10 +1,10 @@
 (("name" . "Raven")
-("version" . "0.3.1")
+("version" . "0.3.2")
 ("description" . "a package manager for Chez Scheme")
 ("keywords" 
     ("tool" "package manager" "chez-scheme"))
 ("author" 
-    ("quenchi" "chclock"))
+    ("guenchi" "chclock"))
 ("license" . "MIT")
 ("homepage" . "http://ravensc.com")
 ("bugs" 

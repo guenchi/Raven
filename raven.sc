@@ -124,7 +124,7 @@
     (cons "keywords" '())
     (cons "author" `((,author)))
     (cons "private" private)
-    (cons "scripts" '(("run" . "scheme --script")))
+    (cons "scripts" '(("repl" . "scheme") ("run" . "scheme --script")))
     (cons "dependencies" '())
     (cons "devDependencies" '())
 ))
