@@ -1,3 +1,29 @@
+;  MIT License
+
+;  Copyright guenchi, chclock (c) 2017-2018 
+         
+;  Permission is hereby granted, free of charge, to any person obtaining a copy
+;  of this software and associated documentation files (the "Software"), to deal
+;  in the Software without restriction, including without limitation the rights
+;  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+;  copies of the Software, and to permit persons to whom the Software is
+;  furnished to do so, subject to the following conditions:
+         
+;  The above copyright notice and this permission notice shall be included in all
+;  copies or substantial portions of the Software.
+         
+;  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+;  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+;  SOFTWARE.
+
+
+
+
+
 ":"; export CHEZSCHEMELIBDIRS=.:lib:/usr/local/lib && export CHEZSCHEMELIBEXTS=.chezscheme.sls::.chezscheme.so:.ss::.so:.sls::.so:.scm::.so:.sch::.so:.sc::.so && exec scheme --script $0 "$@";
 
 ;;; Association List Begin
@@ -98,7 +124,7 @@
     (cons "keywords" '())
     (cons "author" `((,author)))
     (cons "private" private)
-    (cons "scripts" '(("run" . "scheme --script")))
+    (cons "scripts" '(("repl" . "scheme") ("run" . "scheme --script")))
     (cons "dependencies" '())
     (cons "devDependencies" '())
 ))
@@ -384,7 +410,7 @@
                (format "~a 7z a ~a.tar ./ && 7z d ~a.tar lib -r && 7z d ~a.tar .* -r  && 7z d ~a.tar .tar -r && 7z d ~a.tar .tar.gz -r && 7z a ~a-~a.tar.gz ~a.tar"
                  dir ver ver ver ver ver lib ver ver))
           (delete-file (format "~a/~a.tar" (if (null? args) "." (format"./~a" (car args))) ver)))
-        (system (format "~a tar -zcf ~a-~a.tar.gz * --exclude lib --exclude \"*.tar.gz\" --exclude \".*\"" dir lib ver)))
+        (system (format "~a tar -zcf ~a-~a.tar.gz --exclude lib --exclude \"*.tar.gz\" --exclude \".*\" *" dir lib ver)))
       (unless (null? args)
         (if raven-windows?
           (system (format "move ~a\\~a-~a.tar.gz ~a-~a.tar.gz" (car args) lib ver lib ver))
