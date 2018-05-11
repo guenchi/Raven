@@ -1,3 +1,6 @@
+":"; export CHEZSCHEMELIBDIRS=.:lib:/usr/local/lib && export CHEZSCHEMELIBEXTS=.chezscheme.sls::.chezscheme.so:.ss::.so:.sls::.so:.scm::.so:.sch::.so:.sc::.so && exec scheme --script $0 "$@";
+
+
 ;;;  MIT License
 
 ;;;  Copyright guenchi, chclock (c) 2017-2018 
@@ -21,10 +24,6 @@
 ;;;  SOFTWARE.
 
 
-
-
-
-":"; export CHEZSCHEMELIBDIRS=.:lib:/usr/local/lib && export CHEZSCHEMELIBEXTS=.chezscheme.sls::.chezscheme.so:.ss::.so:.sls::.so:.scm::.so:.sch::.so:.sc::.so && exec scheme --script $0 "$@";
 
 ;;; Association List Begin
 
