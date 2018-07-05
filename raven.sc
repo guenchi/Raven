@@ -266,6 +266,16 @@
       ((or (>= pos len) (char=? chr (string-ref str pos)))
        (and (< pos len) pos))))
 
+(define (string-join string-list sep)
+  (let loop ([new-s '()] [old-s string-list])
+      (if (null? old-s)
+        (if (null? new-s)
+          ""  
+          (apply string-append (reverse (cdr new-s))))
+        (loop (cons* sep (car old-s) new-s) (cdr old-s)))
+  )
+)
+
 ;;; Helper End
 
 ;;; Command Begin
@@ -404,9 +414,9 @@
              [cmd (if scripts (asl-ref scripts (car cmds)) #f)]
              [args (append (cdr cmds) opts)])
         (if cmd
-          (system (format "~a ~a" cmd (apply string-append args)))
+          (system (format "~a ~a" cmd (string-join args " ")))
           (if (string-ci=? (car cmds) "run")
-            (system (format "scheme --script ~a" (apply string-append args)))
+            (system (format "scheme --script ~a" (string-join args " ")))
             (printf "invaild command\n"))))
       (printf "please run raven init first\n")))
   )
