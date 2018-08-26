@@ -14,7 +14,7 @@ the Raven libraries generally work fine on the R6RS implatetion, except for some
 
 
 
-The principal developers are: @guenchi, @chclock
+The principal developers are: guenchi, chclock
 
 Nota Bene: We recommand the libraries of Raven files use .sc for disdiguesh the libraries of r5rs / r7rs small.
 
