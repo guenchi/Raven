@@ -15,7 +15,7 @@ the Raven libraries generally work fine on the R6RS implatetion, except for some
 
 Package | description |  only for Chez | r6rs common | pure Scheme | with C lib
 ------- | ----------- | -------------- | ----------- | ----------- | ----------
-collecction |         |                |             |             |
+collecction 
 scheme-lib |          |               | X |         | X         
 slib |
 
