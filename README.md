@@ -5,6 +5,8 @@ Raven is a Package Manager for Chez Scheme
 
 ***Packages List***  http://ravensc.com/list
 
+the Raven libraries generally work fine on the R6RS implatetion, except for some built on the c library which dependent on Chez Scheme's FFI interface. 
+
  package | description |  only for Chez | r6rs common | pure Scheme | C lib depenced
 ---------|-------------|----------------|-------------|-------------|----------------
 ***collection*** 
@@ -34,7 +36,7 @@ chs256 | HMAC-SHA256 | X |||X
 ***generator***
 lalr | LALR(0) || X | X |
 
-the Raven libraries generally work fine on the R6RS implatetion, except for some built on the c library which dependent on Chez Scheme's FFI interface. 
+
 
 
 The project Raven is surport by http://theschemer.org
