@@ -11,7 +11,15 @@ The project Raven is surport by http://theschemer.org
 the Raven libraries generally work fine on the R6RS implatetion, except for some built on the c library which dependent on Chez Scheme's FFI interface. 
 
 
-
+***Packages List***
+Package | description |  only for Chez | r6rs common | pure Scheme | with C lib
+-----------------------------------------------------------------
+collecction
+-----------------------------------------------------------------
+scheme-lib |          |               | X |         | X         
+-----------------------------------------------------------------
+slib
+-----------------------------------------------------------------
 
 
 The principal developers are: guenchi, chclock
