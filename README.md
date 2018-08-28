@@ -21,6 +21,9 @@ chez-json | Json parser || X | X |
 anb-json | Json parser || X | X |
 jwt | Json Web Token | X ||| X
 liber | HTML parser || X | X |
+***system***
+socket || X ||| X
+libc || X ||| X
 ***database***
 mysql|| X ||| X 
 ***hash***
