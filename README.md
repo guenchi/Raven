@@ -1,9 +1,7 @@
 # Raven
 Raven is a Package Manager for Chez Scheme
 
-Officiel Web Site: http://ravensc.com
-
-Packages List: http://ravensc.com/list
+***Web Site:*** http://ravensc.com
 
 The project Raven is surport by http://theschemer.org
 
@@ -11,7 +9,7 @@ The project Raven is surport by http://theschemer.org
 the Raven libraries generally work fine on the R6RS implatetion, except for some built on the c library which dependent on Chez Scheme's FFI interface. 
 
 
-***Packages List***
+***Packages List***  http://ravensc.com/list
 
  package | description |  only for Chez | r6rs common | pure Scheme | C lib depenced
 ---------|-------------|----------------|-------------|-------------|----------------
@@ -23,6 +21,7 @@ igropyr | http server | X ||| X
 ballista | web framwork | X || X ||
 catapult | web framwork | X || X ||
 json | Json parser || X | X ||
+chez-json | Json parser || X | X |
 jwt | Json Web Token | X || X ||
 liber | HTML parser || X | X ||
 ***database***
