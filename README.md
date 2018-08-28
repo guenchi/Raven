@@ -23,7 +23,8 @@ igropyr | http server | X ||| X
 ballista | web framwork | X || X ||
 catapult | web framwork | X || X ||
 json | Json parser || X | X ||
-jwt | Json Web Token || X | X ||
+jwt | Json Web Token | X || X ||
+liber | HTML parser || X | X ||
 ***hash***
 base64 | BASE64 || X | X ||
 csha256 | SHA256 hash | X |||X
