@@ -13,8 +13,8 @@ the Raven libraries generally work fine on the R6RS implatetion, except for some
 
 ***Packages List***
 
-Package | description |  only for Chez | r6rs common | pure Scheme | with C lib
---------|-------------|----------------|-------------|-------------|------------
+Package | description |  only for Chez | r6rs common | pure Scheme | C lib depenced
+--------|-------------|----------------|-------------|-------------|----------------
 ***collection*** 
 scheme-lib ||| X || X         
 slib ||| X || X
@@ -25,6 +25,8 @@ catapult | web framwork | X || X ||
 json | Json parser || X | X ||
 jwt | Json Web Token | X || X ||
 liber | HTML parser || X | X ||
+***database***
+mysql|| X ||| X 
 ***hash***
 base64 | BASE64 || X | X ||
 csha256 | SHA256 hash | X |||X
