@@ -16,6 +16,7 @@ scheme-lib ||| X || X
 igropyr | http server | X ||| X
 ballista | web framwork | X || X |
 catapult | web framwork | X || X |
+libra | web framwork || X | X |
 json | Json parser || X | X |
 chez-json | Json parser || X | X |
 anb-json | Json parser || X | X |
