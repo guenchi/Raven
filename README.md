@@ -15,14 +15,15 @@ the Raven libraries generally work fine on the R6RS implatetion, except for some
 
 Package | description |  only for Chez | r6rs common | pure Scheme | with C lib
 --------|-------------|----------------|-------------|-------------|------------
-***COLLECTION*** 
-scheme-lib |||   X || X         
+***collection*** 
+scheme-lib ||| X || X         
 slib ||| X || X
-***SERVER***
+***web***
 igropyr | http server | X ||| X
-***HASH***
+***hash***
 base64 | BASE64 || X | X ||
 csha256 | SHA256 hash | X |||X
+***crypo***
 chs256 | HMAC-SHA256 | X |||X
 
 
