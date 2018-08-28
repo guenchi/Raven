@@ -8,8 +8,10 @@ Raven is a Package Manager for Chez Scheme
  package | description |  only for Chez | r6rs common | pure Scheme | C lib depenced
 ---------|-------------|----------------|-------------|-------------|----------------
 ***collection*** 
-scheme-lib ||| X || X         
+srfi | srfi || X | X |
+sufage | srfi || X | X |
 slib ||| X || X
+scheme-lib ||| X || X 
 ***web***
 igropyr | http server | X ||| X
 ballista | web framwork | X || X |
@@ -26,6 +28,8 @@ base64 | BASE64 || X | X |
 csha256 | SHA256 hash | X |||X
 ***crypo***
 chs256 | HMAC-SHA256 | X |||X
+***generator***
+lalr | LALR(0) || X | X |
 
 the Raven libraries generally work fine on the R6RS implatetion, except for some built on the c library which dependent on Chez Scheme's FFI interface. 
 
