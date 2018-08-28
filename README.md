@@ -18,16 +18,16 @@ scheme-lib ||| X || X
 slib ||| X || X
 ***web***
 igropyr | http server | X ||| X
-ballista | web framwork | X || X ||
-catapult | web framwork | X || X ||
-json | Json parser || X | X ||
+ballista | web framwork | X || X |
+catapult | web framwork | X || X |
+json | Json parser || X | X |
 chez-json | Json parser || X | X |
-jwt | Json Web Token | X || X ||
-liber | HTML parser || X | X ||
+jwt | Json Web Token | X ||| X
+liber | HTML parser || X | X |
 ***database***
 mysql|| X ||| X 
 ***hash***
-base64 | BASE64 || X | X ||
+base64 | BASE64 || X | X |
 csha256 | SHA256 hash | X |||X
 ***crypo***
 chs256 | HMAC-SHA256 | X |||X
