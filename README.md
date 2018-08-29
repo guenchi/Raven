@@ -14,13 +14,13 @@ slib ||| X | X |
 scheme-lib ||| X || X
 ***web***
 igropyr | http server | X ||| X
-ballista | web framwork | X || X |
-catapult | web framwork | X || X |
+ballista | web framwork | X || X | X 
+catapult | web framwork | X || X | X 
 libra | web framwork || X | X |
 json | Json parser || X | X |
 chez-json | Json parser || X | X |
 anb-json | Json parser || X | X |
-jwt | Json Web Token | X ||| X
+jwt | Json Web Token | X || X | X
 liber | HTML parser || X | X |
 ***system***
 socket || X ||| X
