@@ -11,7 +11,7 @@ Raven is a Package Manager for Chez Scheme
 srfi | srfi || X | X |
 sufage | srfi || X | X |
 slib ||| X || X
-scheme-lib ||| X || X 
+scheme-lib ||| X | X |
 ***web***
 igropyr | http server | X ||| X
 ballista | web framwork | X || X |
