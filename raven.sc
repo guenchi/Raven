@@ -165,7 +165,9 @@
                   (delete-file (format "~a/~a.tar" lib-path lib) #t)
                   (delete-file (format "~a/install.log" lib-path) #t))
               (and
-                (mkdir (format "~a/~a" lib-path lib))
+                (if (file-exists? (format "~a/~a" lib-path lib))
+                    #t
+                    (mkdir (format "~a/~a" lib-path lib)))
                 (system (format "cd ~a && curl -# -o ~a.tar.gz ~a/~a/~a && tar -xzf ~a.tar.gz -C ~a/~a"
                           lib-path lib raven-url lib ver lib lib-path lib))
                 (delete-file (format "~a/~a.tar.gz" lib-path lib) #t)))
