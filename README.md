@@ -34,7 +34,7 @@ csha256 | SHA256 hash | X |||X
 ***crypo***
 chs256 | HMAC-SHA256 | X |||X
 ***generator***
-lalr | LALR(0) || X | X |
+lalr | LALR(1) || X | X |
 
 `the Raven libraries generally work fine on the R6RS implatetion, except for some built on the c library which dependent on Chez Scheme's FFI.` 
 
