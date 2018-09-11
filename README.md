@@ -1,7 +1,7 @@
 # Raven
 Raven is a Package Manager for Chez Scheme
 
-***[Web Site](http://ravensc.com)***        ***[Manual](https://guenchi.gitbooks.io/raven/content/)***
+***[Web Site](http://ravensc.com)***                    ***[Manual](https://guenchi.gitbooks.io/raven/content/)***
 
 ***[Packages List](http://ravensc.com/list)***
 
