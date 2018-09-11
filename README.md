@@ -1,9 +1,7 @@
 # Raven
 Raven is a Package Manager for Chez Scheme
 
-***Web Site:*** http://ravensc.com
-
-***Packages List***  http://ravensc.com/list
+***[Web Site](http://ravensc.com)***  ***[Packages List](http://ravensc.com/list)***  ***[Manual](https://guenchi.gitbooks.io/raven/content/)***
 
  package | description |  only for Chez | r6rs common | pure Scheme | C lib depenced
 ---------|-------------|----------------|-------------|-------------|----------------
@@ -39,13 +37,12 @@ lalr | LALR(1) || X | X |
 `the Raven libraries generally work fine on the R6RS implatetion, except for some built on the c library which dependent on Chez Scheme's FFI.` 
 
 
-The project Raven is surport by http://theschemer.org
+The project Raven is surport by [theschemer.org](http://theschemer.org)
 
-The principal developers are: guenchi, chclock
+The principal developers are: [guenchi](https://github.com/guenchi), [chclock](https://github.com/chclock)
 
 Nota Bene: We recommand the libraries of Raven files use .sc for disdiguesh the libraries of r5rs / r7rs small.
 
-Manual: https://guenchi.gitbooks.io/raven/content/
 
 
 
