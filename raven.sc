@@ -1,6 +1,3 @@
-":"; export CHEZSCHEMELIBDIRS=.:lib:/usr/local/lib && export CHEZSCHEMELIBEXTS=.chezscheme.sls::.chezscheme.so:.ss::.so:.sls::.so:.scm::.so:.sch::.so:.sc::.so && exec scheme --script $0 "$@";
-
-
 ;;; Association List Begin
 
 (define package-sc->scm
