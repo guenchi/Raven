@@ -1,6 +1,6 @@
 ;;; Info Begin
 
-(define install-version "0.2.0")
+(define install-version "0.2.1")
 
 (define windows? 
   (case (machine-type)
@@ -83,7 +83,7 @@
               (delete-file (format "~a/raven.tar.gz" target-path)))
           (begin
             (delete-file "/usr/local/bin/raven")
-            (system "ln -s /usr/local/lib/raven/raven/raven.sc /usr/local/bin/raven")
+            (system "ln -s /usr/local/lib/raven/raven/raven.sh /usr/local/bin/raven")
             (system "chmod +x /usr/local/bin/raven")
             (printf "install raven ~a success\n" ver))
           (printf "install raven ~a fail\n" ver)
