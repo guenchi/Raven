@@ -1,6 +1,6 @@
 ;;; Info Begin
 
-(define install-version "0.2.1")
+(define install-version "0.3.7")
 
 (define windows? 
   (case (machine-type)
