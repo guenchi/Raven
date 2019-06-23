@@ -41,11 +41,11 @@ lalr | LALR(1) parser || X | X |
 `the Raven libraries generally work fine on the R6RS implatetion, except for some built on the c library which dependent on Chez Scheme's FFI.` 
 
 
-The project Raven is surport by [theschemer.org](http://theschemer.org)
+The project Raven is supported by [theschemer.org](http://theschemer.org)
 
 The principal developers are: [guenchi](https://github.com/guenchi), [chclock](https://github.com/chclock)
 
-Nota Bene: We recommand the libraries of Raven files use .sc for disdiguesh the libraries of r5rs / r7rs small.
+Nota Bene: We recommend that the libraries for Raven files use .sc for distinguishing the libraries of r5rs / r7rs small.
 
 
 
