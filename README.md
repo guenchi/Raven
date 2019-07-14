@@ -41,7 +41,7 @@ lalr | LALR(1) parser || X | X |
 `the Raven libraries generally work fine on the R6RS implatetion, except for some built on the c library which dependent on Chez Scheme's FFI.` 
 
 
-Running project: $ raven run exemple.sc
+Running project: `$ raven run exemple.sc`
 
 
 The project Raven is supported by [theschemer.org](http://theschemer.org)
