@@ -1,10 +1,6 @@
 ;;; Info Begin
 
-<<<<<<< HEAD
-(define install-version "0.3.7")
-=======
-(define install-version "0.2.0")
->>>>>>> parent of b594604... 优化Mac/Linux上的运行脚本，兼容fish shell
+(define install-version "0.3.8")
 
 (define windows? 
   (case (machine-type)
