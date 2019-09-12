@@ -1,6 +1,10 @@
 ;;; Info Begin
 
+<<<<<<< HEAD
 (define install-version "0.3.7")
+=======
+(define install-version "0.2.0")
+>>>>>>> parent of b594604... 优化Mac/Linux上的运行脚本，兼容fish shell
 
 (define windows? 
   (case (machine-type)
@@ -83,7 +87,7 @@
               (delete-file (format "~a/raven.tar.gz" target-path)))
           (begin
             (delete-file "/usr/local/bin/raven")
-            (system "ln -s /usr/local/lib/raven/raven/raven.sh /usr/local/bin/raven")
+            (system "ln -s /usr/local/lib/raven/raven/raven.sc /usr/local/bin/raven")
             (system "chmod +x /usr/local/bin/raven")
             (printf "install raven ~a success\n" ver))
           (printf "install raven ~a fail\n" ver)
