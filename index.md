@@ -8,9 +8,8 @@
 ***[Packages List](http://ravensc.com/list)***
 
 
-```
-the Raven libraries generally work fine on the R6RS implatetion, except for some built on the c library which dependent on Chez Scheme's FFI.
-```
+
+*** the Raven libraries generally work fine on the R6RS implatetion, except for some built on the c library which dependent on Chez Scheme's FFI.***
 
 
 Running project: 
