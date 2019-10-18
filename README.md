@@ -40,13 +40,13 @@ chs256 | HMAC-SHA256 | X |||X
 nanopass|compiler framwork||X|X|
 lalr | LALR(1) parser || X | X |
 
-`the Raven libraries generally work fine on the R6RS implatetion, except for some built on the c library which dependent on Chez Scheme's FFI.` 
+`the Raven libraries generally work fine on the R6RS implementation, except for some built on the c library which dependent on Chez Scheme's FFI.` 
 
 
 Running project: 
 
 ```
-$ raven run exemple.sc
+$ raven run example.sc
 ```
 
 if you will run a project compiled:
