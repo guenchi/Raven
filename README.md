@@ -39,6 +39,8 @@ chs256 | HMAC-SHA256 | X |||X
 ***compiler***
 nanopass|compiler framwork||X|X|
 lalr | LALR(1) parser || X | X |
+***statistics***
+chez-stats|statistics||X|X|
 
 `the Raven libraries generally work fine on the R6RS implementation, except for some built on the c library which dependent on Chez Scheme's FFI.` 
 
