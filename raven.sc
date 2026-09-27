@@ -113,7 +113,7 @@
     (lambda (c) (or (char-numeric? c) (char-alphabetic? c) (memv c '(#\. #\- #\_))))))
 
 (define (read-file file-name)
-  ;; 读取文件
+  ;; Read a whole file into a string
   (let ((p (open-input-file file-name)))
       (let loop ((lst '()) (c (read-char p)))
           (if (eof-object? c)
@@ -123,7 +123,7 @@
               (loop (cons c lst) (read-char p))))))
 
 (define (write-file file-name content)
-  ;; 写文件
+  ;; Write a string to a file, replacing it
   (delete-file file-name)
   (let ([p (open-output-file file-name)] [len (string-length content)])
     (let loop ([idx 0])
@@ -135,7 +135,7 @@
 )
 
 (define (make-package-asl name version description author private)
-  ;; 默认package内容
+  ;; Default package.sc content
   (list 
     (cons "name" name)
     (cons "version" version)
@@ -149,7 +149,7 @@
 ))
 
 (define console-readline
-  ;; 获取控制台输入
+  ;; Read a line from the console
   (case-lambda
     ([] (console-readline #f #f))
     ([prompt] (console-readline prompt #f))
@@ -247,16 +247,16 @@
 )
 
 (define (opt-string? str)
-  ;; 是否为选项
+  ;; Is this argument an option?
   (and (> (string-length str) 1)
        (string-ci=? (substring str 0 1) "-")))
 
 (define (string->opt str)
-  ;; 获取选项
+  ;; Convert an option string to a symbol
   (string->symbol (substring str 1 (string-length str))))
 
 (define (clear-directory path)
-  ;; 清空并删除文件夹
+  ;; Recursively empty and remove a directory
   (when (file-directory? path)
     (for-each 
       (lambda (p)
@@ -277,7 +277,7 @@
 )
 
 (define (system-return cmd)
-  ;; 读取命令行返回内容
+  ;; Capture the output of a shell command
   (define tmp "./._##tmp##")
   (define rst "")
   (and (zero? (system (string-append cmd " > " tmp)))
@@ -301,7 +301,7 @@
 )
 
 (define (newest-version lib)
-  ;; 获取最新库版本
+  ;; Fetch the latest version of a library from the registry
   (define ver
     (and (valid-lib-name? lib)
          (system-return (format "curl -s ~a/~a" raven-url lib))))
@@ -465,7 +465,7 @@
 )
 
 (define (self-command opts cmds)
-  ;; 自定义命令
+  ;; Run a custom script from package.sc
   (cond
     ((and (string-ci=? (car cmds) "run") (member "-h" opts)) (raven-printf-help "run-h"))
     (else (if (file-exists? raven-pkg-path)
@@ -527,12 +527,12 @@
 ;;; Main Begin
 
 (define (raven-init)
-  ;; 初始化环境
+  ;; Initialize the environment
   #f
 )
 
 (define (init-opts opts)
-  ;; 检测环境
+  ;; Apply command-line options
   (when (member "-g" opts)
     (set! raven-library-dir raven-global-dir)
     (set! raven-library-path raven-global-path)
@@ -542,7 +542,7 @@
 )
 
 (define (check-version)
-  ;; 运行前检查版本
+  ;; Print the raven version
   (printf (format "Raven version: ~a\n" raven-version))
 )
 
@@ -579,7 +579,7 @@
 )
 
 (define (raven)
-  ;; raven 启动方法
+  ;; raven entry point
   (define args (command-line-arguments))
   (raven-init)
   (if (null? args)
