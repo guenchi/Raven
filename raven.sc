@@ -69,6 +69,49 @@
 
 ;;; Helper Begin
 
+(define (run! cmd)
+  ;; Run a shell command; #t only when it exits with status 0.
+  ;; (Chez's `system` returns the exit code, and any integer is truthy.)
+  (zero? (system cmd)))
+
+(define (version->list ver)
+  ;; "1.10.2" -> (1 10 2); non-numeric parts count as 0
+  (let loop ([chars (string->list ver)] [cur '()] [acc '()])
+    (define (part) (or (string->number (list->string (reverse cur))) 0))
+    (cond
+      [(null? chars) (reverse (cons (part) acc))]
+      [(char=? (car chars) #\.) (loop (cdr chars) '() (cons (part) acc))]
+      [else (loop (cdr chars) (cons (car chars) cur) acc)])))
+
+(define (version>=? a b)
+  ;; Numeric, segment-wise version comparison: (version>=? "0.10.0" "0.9.0") => #t
+  (let loop ([x (version->list a)] [y (version->list b)])
+    (cond
+      [(and (null? x) (null? y)) #t]
+      [(null? x) (loop '(0) y)]
+      [(null? y) (loop x '(0))]
+      [(> (car x) (car y)) #t]
+      [(< (car x) (car y)) #f]
+      [else (loop (cdr x) (cdr y))])))
+
+(define (string-matches? str ok-char?)
+  (and (string? str)
+       (> (string-length str) 0)
+       (for-all ok-char? (string->list str))))
+
+(define (valid-lib-name? name)
+  ;; Library names are interpolated into shell commands and file paths,
+  ;; so only allow a safe charset and reject names like "." or "..".
+  (and (string? name)
+       (> (string-length name) 0)
+       (not (char=? (string-ref name 0) #\.))
+       (string-matches? name
+    (lambda (c) (or (char-alphabetic? c) (char-numeric? c) (memv c '(#\- #\_ #\.)))))))
+
+(define (valid-version? ver)
+  (string-matches? ver
+    (lambda (c) (or (char-numeric? c) (char-alphabetic? c) (memv c '(#\. #\- #\_))))))
+
 (define (read-file file-name)
   ;; 读取文件
   (let ((p (open-input-file file-name)))
@@ -146,6 +189,14 @@
       (begin
         (unless ver
           (set! ver (newest-version lib)))
+        (cond
+          [(not (valid-lib-name? lib))
+            (printf "invalid library name: ~s\n" lib)
+            #f]
+          [(not (valid-version? ver))
+            (printf "invalid version for ~a: ~s\n" lib ver)
+            #f]
+          [else
         (unless (file-directory? lib-path)
           (mkdir lib-path))
         (unless check?
@@ -154,13 +205,13 @@
           (printf (format "loading ~a ~a ......\n" lib ver)))
         (if (and check? 
               (file-exists? (format "~a/~a/~a" lib-path lib raven-pkg-file))
-              (string-ci>=? (asl-ref (package-sc->scm (format "~a/~a/~a" lib-path lib raven-pkg-file)) "version" "0.0.0") ver))
+              (version>=? (asl-ref (package-sc->scm (format "~a/~a/~a" lib-path lib raven-pkg-file)) "version" "0.0.0") ver))
           (printf "a high version ~a ~a exists\nstop loading ~a ~a\n"
               lib (asl-ref (package-sc->scm (format "~a/~a/~a" lib-path lib raven-pkg-file)) "version") lib ver)
           (if
             (if raven-windows?
               (and
-                  (system (format "cd /d ~a && curl -# -o ~a.tar.gz ~a/~a/~a && 7z x ~a.tar.gz -y -aoa >> install.log && 7z x ~a.tar -o~a/~a -y -aoa >> install.log"
+                  (run! (format "cd /d ~a && curl -# -o ~a.tar.gz ~a/~a/~a && 7z x ~a.tar.gz -y -aoa >> install.log && 7z x ~a.tar -o~a/~a -y -aoa >> install.log"
                             lib-path lib raven-url lib ver lib lib lib-path lib))
                   (delete-file (format "~a/~a.tar.gz" lib-path lib) #t)
                   (delete-file (format "~a/~a.tar" lib-path lib) #t)
@@ -169,7 +220,7 @@
                 (if (file-exists? (format "~a/~a" lib-path lib))
                     #t
                     (mkdir (format "~a/~a" lib-path lib)))
-                (system (format "cd ~a && curl -# -o ~a.tar.gz ~a/~a/~a && tar -xzf ~a.tar.gz -C ~a/~a"
+                (run! (format "cd ~a && curl -# -o ~a.tar.gz ~a/~a/~a && tar -xzf ~a.tar.gz -C ~a/~a"
                           lib-path lib raven-url lib ver lib lib-path lib))
                 (delete-file (format "~a/~a.tar.gz" lib-path lib) #t)))
             (begin
@@ -189,7 +240,7 @@
               (when printf? (printf (format "load ~a ~a fail\n" lib ver)))
               #f)
           )
-        )
+        )])
       )
     )
   )
@@ -251,10 +302,12 @@
 
 (define (newest-version lib)
   ;; 获取最新库版本
-  (define ver (system-return (format "curl -s ~a/~a" raven-url lib)))
-  (if (or (string-ci=? ver "#f") (string-ci=? ver ""))
-      #f
-      ver)
+  (define ver
+    (and (valid-lib-name? lib)
+         (system-return (format "curl -s ~a/~a" raven-url lib))))
+  (if (valid-version? ver)
+      ver
+      #f)
 )
 
 (define (ask-Y/n? tip)
@@ -354,8 +407,11 @@
   ;; Uninstallation
   (cond
     ((member "-h" opts) (raven-printf-help "uninstall-h"))
-    (else (if (null? libs)
-      (printf "please add library name\n")
+    (else (cond
+      [(null? libs) (printf "please add library name\n")]
+      [(find (lambda (name) (not (valid-lib-name? name))) libs)
+        => (lambda (name) (printf "invalid library name: ~s\n" name))]
+      [else
       ;; uninstall libs
       (if raven-global?
         (for-each 
@@ -379,7 +435,7 @@
             (write-package-file raven-pkg-path asl)
             (printf "raven uninstall over\n"))
           (printf "please raven init first\n")
-        ))
+        ))]
     ))
   )
 )
@@ -460,7 +516,11 @@
 
 (define raven-global? #f)
 
-(define raven-version (asl-ref (package-sc->scm (format "~a/raven/~a" raven-global-path raven-pkg-file)) "version" ""))
+(define raven-version
+  (let ([path (format "~a/raven/~a" raven-global-path raven-pkg-file)])
+    (if (file-exists? path)
+        (asl-ref (package-sc->scm path) "version" "")
+        "unknown")))
 
 ;;; Info End
 

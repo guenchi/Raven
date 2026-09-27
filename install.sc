@@ -28,6 +28,10 @@
                   (list->string (reverse lst)))
               (loop (cons c lst) (read-char p))))))
 
+(define (run! cmd)
+  ;; Run a shell command; #t only when it exits with status 0.
+  (zero? (system cmd)))
+
 (define (system-return cmd)
   (define tmp "./##tmp##")
   (define rst "")
@@ -40,9 +44,11 @@
 
 (define (newest-version)
   (define ver (system-return (string-append "curl -s " raven-url)))
-  (if (or (string-ci=? ver "#f") (string-ci=? ver ""))
-      #f
-      ver))
+  ;; Accept only a plain version string, never an error page from a proxy/server.
+  (if (and (> (string-length ver) 0)
+           (for-all (lambda (c) (or (char-numeric? c) (char=? c #\.))) (string->list ver)))
+      ver
+      #f))
 
 (define (clear-directory path)
   (when (file-directory? path)
@@ -66,7 +72,7 @@
       (printf "loading raven ~a ......\n" ver)
       (if windows?
         (if (and 
-              (system (format "cd /d ~a && curl -# -o raven.tar.gz ~a/~a && 7z x raven.tar.gz -y -aoa >> install.log && 7z x raven.tar -o~a/raven -y -aoa >> install.log"
+              (run! (format "cd /d ~a && curl -# -o raven.tar.gz ~a/~a && 7z x raven.tar.gz -y -aoa >> install.log && 7z x raven.tar -o~a/raven -y -aoa >> install.log"
                                 target-path raven-url ver target-path))
               (delete-file (format "~a/raven.tar.gz" target-path))
               (delete-file (format "~a/raven.tar" target-path))
@@ -78,7 +84,7 @@
         )
         (if (and
               (mkdir (format "~a/raven" target-path))
-              (system (format "cd ~a && curl -# -o raven.tar.gz ~a/~a && tar -xzf raven.tar.gz -C ~a/raven"
+              (run! (format "cd ~a && curl -# -o raven.tar.gz ~a/~a && tar -xzf raven.tar.gz -C ~a/raven"
                                 target-path raven-url ver target-path))
               (delete-file (format "~a/raven.tar.gz" target-path)))
           (begin
