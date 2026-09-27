@@ -114,25 +114,16 @@
 
 (define (read-file file-name)
   ;; Read a whole file into a string
-  (let ((p (open-input-file file-name)))
-      (let loop ((lst '()) (c (read-char p)))
-          (if (eof-object? c)
-              (begin 
-                  (close-input-port p)
-                  (list->string (reverse lst)))
-              (loop (cons c lst) (read-char p))))))
+  (call-with-input-file file-name
+    (lambda (p)
+      (let ([s (get-string-all p)])
+        (if (eof-object? s) "" s)))))
 
 (define (write-file file-name content)
   ;; Write a string to a file, replacing it
   (delete-file file-name)
-  (let ([p (open-output-file file-name)] [len (string-length content)])
-    (let loop ([idx 0])
-      (when (< idx len)
-          (write-char (string-ref content idx) p)
-          (loop (add1 idx))))
-    (close-output-port p)
-  )
-)
+  (call-with-output-file file-name
+    (lambda (p) (put-string p content))))
 
 (define (make-package-asl name version description author private)
   ;; Default package.sc content
@@ -196,11 +187,13 @@
           [(not (valid-version? ver))
             (printf "invalid version for ~a: ~s\n" lib ver)
             #f]
+          [(and (not check?) (equal? (installed-version lib lib-path) ver))
+            (when printf?
+              (printf "~a ~a is already installed\n" lib ver))
+            #t]
           [else
         (unless (file-directory? lib-path)
           (mkdir lib-path))
-        (unless check?
-          (clear-directory (format "~a/~a" lib-path lib)))
         (when printf?
           (printf (format "loading ~a ~a ......\n" lib ver)))
         (if (and check? 
@@ -208,21 +201,7 @@
               (version>=? (asl-ref (package-sc->scm (format "~a/~a/~a" lib-path lib raven-pkg-file)) "version" "0.0.0") ver))
           (printf "a high version ~a ~a exists\nstop loading ~a ~a\n"
               lib (asl-ref (package-sc->scm (format "~a/~a/~a" lib-path lib raven-pkg-file)) "version") lib ver)
-          (if
-            (if raven-windows?
-              (and
-                  (run! (format "cd /d ~a && curl -# -o ~a.tar.gz ~a/~a/~a && 7z x ~a.tar.gz -y -aoa >> install.log && 7z x ~a.tar -o~a/~a -y -aoa >> install.log"
-                            lib-path lib raven-url lib ver lib lib lib-path lib))
-                  (delete-file (format "~a/~a.tar.gz" lib-path lib) #t)
-                  (delete-file (format "~a/~a.tar" lib-path lib) #t)
-                  (delete-file (format "~a/install.log" lib-path) #t))
-              (and
-                (if (file-exists? (format "~a/~a" lib-path lib))
-                    #t
-                    (mkdir (format "~a/~a" lib-path lib)))
-                (run! (format "cd ~a && curl -# -o ~a.tar.gz ~a/~a/~a && tar -xzf ~a.tar.gz -C ~a/~a"
-                          lib-path lib raven-url lib ver lib lib-path lib))
-                (delete-file (format "~a/~a.tar.gz" lib-path lib) #t)))
+          (if (download-lib lib ver lib-path)
             (begin
               (when (file-exists? (format "~a/~a/~a" lib-path lib raven-pkg-file))
                 (let* ([asl (package-sc->scm (format "~a/~a/~a" lib-path lib raven-pkg-file))]
@@ -233,7 +212,13 @@
                     (lambda (lib/ver) 
                       (load-lib (car lib/ver) (cdr lib/ver) lib-path #t #t))
                     libs-asl)
-                  (when build (system build))))
+                  (when build
+                    (if raven-ignore-scripts?
+                      (printf "skip build script of ~a: ~a\n" lib build)
+                      (begin
+                        (printf "running build script of ~a: ~a\n" lib build)
+                        (unless (run! build)
+                          (printf "warning: build script of ~a failed\n" lib)))))))
               (when printf? (printf (format "load ~a ~a success\n" lib ver)))
               #t)
             (begin
@@ -245,6 +230,33 @@
     )
   )
 )
+
+(define (delete-if-exists path)
+  (when (file-exists? path)
+    (delete-file path)))
+
+(define (download-lib lib ver lib-path)
+  ;; Download lib@ver and extract it into lib-path/lib.
+  ;; The existing installation is only removed once the download succeeded.
+  (let* ([dir (format "~a/~a" lib-path lib)]
+         [ok (and (run! (format "~a ~a && curl -f -# -o ~a.tar.gz ~a/~a/~a"
+                          (if raven-windows? "cd /d" "cd") lib-path lib raven-url lib ver))
+                  (begin
+                    (clear-directory dir)
+                    (mkdir dir)
+                    (if raven-windows?
+                      (run! (format "cd /d ~a && 7z x ~a.tar.gz -y -aoa >> install.log && 7z x ~a.tar -o~a -y -aoa >> install.log"
+                              lib-path lib lib dir))
+                      (run! (format "tar -xzf ~a/~a.tar.gz -C ~a" lib-path lib dir)))))])
+    (for-each delete-if-exists
+      (list (format "~a.tar.gz" dir) (format "~a.tar" dir) (format "~a/install.log" lib-path)))
+    ok))
+
+(define (installed-version lib lib-path)
+  ;; Version recorded in lib-path/lib/package.sc, or #f when not installed
+  (let ([path (format "~a/~a/~a" lib-path lib raven-pkg-file)])
+    (and (file-exists? path)
+         (asl-ref (package-sc->scm path) "version" #f))))
 
 (define (opt-string? str)
   ;; Is this argument an option?
@@ -277,15 +289,20 @@
 )
 
 (define (system-return cmd)
-  ;; Capture the output of a shell command
-  (define tmp "./._##tmp##")
-  (define rst "")
-  (and (zero? (system (string-append cmd " > " tmp)))
-    (file-exists? tmp)
-    (begin (set! rst (read-file tmp))))
-  (delete-file tmp)
-  rst
-)
+  ;; Capture the output of a shell command, with surrounding whitespace trimmed
+  (let* ([ports (process cmd)]
+         [out (car ports)]
+         [rst (get-string-all out)])
+    (close-port out)
+    (close-port (cadr ports))
+    (if (eof-object? rst) "" (string-trim rst))))
+
+(define (string-trim str)
+  (let loop ([start 0] [end (string-length str)])
+    (cond
+      [(and (< start end) (char-whitespace? (string-ref str start))) (loop (1+ start) end)]
+      [(and (< start end) (char-whitespace? (string-ref str (1- end)))) (loop start (1- end))]
+      [else (substring str start end)])))
 
 (define (newest-lib/version lib)
   ;; get lib's version from server
@@ -416,21 +433,28 @@
       (if raven-global?
         (for-each 
           (lambda (name) 
-            (printf "deleting ~a/~a ......\n" raven-library-path name)
-            (delete-file/directory (format "~a/~a" raven-library-path name))
-            (unless raven-windows?
-              (delete-file (format "/usr/local/bin/~a" name)))
-            (printf "uninstall ~a success\n" name))
+            (if (file-exists? (format "~a/~a" raven-library-path name))
+              (begin
+                (printf "deleting ~a/~a ......\n" raven-library-path name)
+                (delete-file/directory (format "~a/~a" raven-library-path name))
+                (unless raven-windows?
+                  (delete-file (format "/usr/local/bin/~a" name)))
+                (printf "uninstall ~a success\n" name))
+              (printf "~a is not installed\n" name)))
           libs)
         (if (and (file-directory? raven-library-path) (file-exists? raven-pkg-path))
           (let* ([asl (package-sc->scm)]
                  [libs-asl (asl-ref asl raven-current-key '())])
             (for-each 
               (lambda (name)
-                (printf "deleting ~a/~a ......\n" raven-library-path name)
-                (clear-directory (format "~a/~a" raven-library-path name))
-                (asl-delete! asl raven-current-key name) 
-                (printf "uninstall ~a success\n" name)) 
+                (if (or (assoc name libs-asl)
+                        (file-directory? (format "~a/~a" raven-library-path name)))
+                  (begin
+                    (printf "deleting ~a/~a ......\n" raven-library-path name)
+                    (clear-directory (format "~a/~a" raven-library-path name))
+                    (asl-delete! asl raven-current-key name)
+                    (printf "uninstall ~a success\n" name))
+                  (printf "~a is not installed\n" name)))
               libs)
             (write-package-file raven-pkg-path asl)
             (printf "raven uninstall over\n"))
@@ -516,6 +540,8 @@
 
 (define raven-global? #f)
 
+(define raven-ignore-scripts? #f)
+
 (define raven-version
   (let ([path (format "~a/raven/~a" raven-global-path raven-pkg-file)])
     (if (file-exists? path)
@@ -539,6 +565,8 @@
     (set! raven-global? #t))
   (when (member "-dev" opts)
     (set! raven-current-key raven-dev-depend-key))
+  (when (member "-ignore-scripts" opts)
+    (set! raven-ignore-scripts? #t))
 )
 
 (define (check-version)
@@ -553,9 +581,9 @@
     ("init-h"
       . "\nUsage:\n\nraven init\n\tcreat a file package.sc for a new project\n\n")
     ("install-h"
-      . "\nUsage:\n\nraven install [option]\n\tinstall the \"dependencies\" of the package.sc\n\nraven install [option] <packageName>\n\tinstall the package of current version and update package.sc\n\nraven install [option] <packageName>@<version>\n\tinstall the package of specified version and update package.sc\n\n[option]:\n\t-clean: clean the C source files after complie\n\t-dev: work with \"devDependencies\" instead of \"dependencies\"\n\t-g: install package as a CLI tool. need root permissions.\n\n")
+      . "\nUsage:\n\nraven install [option]\n\tinstall the \"dependencies\" of the package.sc\n\nraven install [option] <packageName>\n\tinstall the package of current version and update package.sc\n\nraven install [option] <packageName>@<version>\n\tinstall the package of specified version and update package.sc\n\n[option]:\n\t-ignore-scripts: do not run the \"build\" scripts of installed packages\n\t-dev: work with \"devDependencies\" instead of \"dependencies\"\n\t-g: install package as a CLI tool. need root permissions.\n\n")
     ("uninstall-h"
-      . "\nUsage:\n\nraven install [option] <packageName>\n\tremove the package and update package.sc\n\n[option]:\n\t-dev: work with \"devDependencies\" instead of \"dependencies\"\n\t-g: remove a CLI tool. need root permissions.\n\n")
+      . "\nUsage:\n\nraven uninstall [option] <packageName>\n\tremove the package and update package.sc\n\n[option]:\n\t-dev: work with \"devDependencies\" instead of \"dependencies\"\n\t-g: remove a CLI tool. need root permissions.\n\n")
     ("pack-h"
       . "\nUsage:\n\nraven pack\n\tpacking the current project in file tar.gz\n\n")
     ("run-h"
@@ -573,7 +601,6 @@
   (case (car opts)
     [("-v" "--version") (check-version)]
     [("-h" "--help") (raven-printf-help "raven-h")]
-    [("--clean") (printf "todo\n")]
     [else (raven-printf-help "raven-h")]
   )
 )
