@@ -19,28 +19,30 @@
 
 ;;; Helper Begin
 
-(define (read-file file-name)
-  (let ((p (open-input-file file-name)))
-      (let loop ((lst '()) (c (read-char p)))
-          (if (eof-object? c)
-              (begin 
-                  (close-input-port p)
-                  (list->string (reverse lst)))
-              (loop (cons c lst) (read-char p))))))
-
 (define (run! cmd)
   ;; Run a shell command; #t only when it exits with status 0.
   (zero? (system cmd)))
 
 (define (system-return cmd)
-  (define tmp "./##tmp##")
-  (define rst "")
-  (and (zero? (system (string-append cmd " > " tmp)))
-    (file-exists? tmp)
-    (begin (set! rst (read-file tmp))))
-  (delete-file tmp)
-  rst
-)
+  ;; Capture the output of a shell command, with surrounding whitespace trimmed
+  (let* ([ports (process cmd)]
+         [out (car ports)]
+         [rst (get-string-all out)])
+    (close-port out)
+    (close-port (cadr ports))
+    (if (eof-object? rst) "" (string-trim rst))))
+
+(define (string-trim str)
+  (let loop ([start 0] [end (string-length str)])
+    (cond
+      [(and (< start end) (char-whitespace? (string-ref str start))) (loop (1+ start) end)]
+      [(and (< start end) (char-whitespace? (string-ref str (1- end)))) (loop start (1- end))]
+      [else (substring str start end)])))
+
+(define (delete-if-exists path)
+  ;; Also removes dangling symbolic links (file-exists? would follow them)
+  (when (file-exists? path #f)
+    (delete-file path)))
 
 (define (newest-version)
   (define ver (system-return (string-append "curl -s " raven-url)))
@@ -62,43 +64,46 @@
       (directory-list path))
     (delete-directory path)))
 
+(define (download-raven ver)
+  ;; Download raven@ver and extract it into target-path/raven.
+  ;; The existing installation is only removed once the download succeeded.
+  (let* ([dir (format "~a/raven" target-path)]
+         [ok (and (run! (format "~a ~a && curl -f -# -o raven.tar.gz ~a/~a"
+                          (if windows? "cd /d" "cd") target-path raven-url ver))
+                  (begin
+                    (clear-directory dir)
+                    (mkdir dir)
+                    (if windows?
+                      (run! (format "cd /d ~a && 7z x raven.tar.gz -y -aoa >> install.log && 7z x raven.tar -o~a -y -aoa >> install.log"
+                              target-path dir))
+                      (run! (format "tar -xzf ~a/raven.tar.gz -C ~a" target-path dir)))))])
+    (for-each delete-if-exists
+      (list (format "~a/raven.tar.gz" target-path)
+            (format "~a/raven.tar" target-path)
+            (format "~a/install.log" target-path)))
+    ok))
+
 (define (install)
   (define ver (newest-version))
-  (if ver
-    (begin
+  (cond
+    [(not ver)
+      (printf "cannot get the latest raven version from ~a\n" raven-url)]
+    [else
       (unless (file-directory? target-path)
         (mkdir target-path))
-      (clear-directory (format "~a/raven" target-path))
       (printf "loading raven ~a ......\n" ver)
-      (if windows?
-        (if (and 
-              (run! (format "cd /d ~a && curl -# -o raven.tar.gz ~a/~a && 7z x raven.tar.gz -y -aoa >> install.log && 7z x raven.tar -o~a/raven -y -aoa >> install.log"
-                                target-path raven-url ver target-path))
-              (delete-file (format "~a/raven.tar.gz" target-path))
-              (delete-file (format "~a/raven.tar" target-path))
-              (delete-file (format "~a/install.log" target-path)))
-          (begin
-            (printf "The script has been downloaded in ~a\\raven\nYou should add this path to the system variables PATH before you enjoy the raven\n" target-path)
-            (printf "install raven ~a success\n" ver))
-          (printf "install raven ~a fail\n" ver)
-        )
-        (if (and
-              (mkdir (format "~a/raven" target-path))
-              (run! (format "cd ~a && curl -# -o raven.tar.gz ~a/~a && tar -xzf raven.tar.gz -C ~a/raven"
-                                target-path raven-url ver target-path))
-              (delete-file (format "~a/raven.tar.gz" target-path)))
-          (begin
-            (delete-file "/usr/local/bin/raven")
-            (system "ln -s /usr/local/lib/raven/raven/raven.sc /usr/local/bin/raven")
-            (system "chmod +x /usr/local/bin/raven")
-            (printf "install raven ~a success\n" ver))
-          (printf "install raven ~a fail\n" ver)
-        )
-      )
-    )
-    (printf "dont't exist raven\n")
-  )
-)
+      (cond
+        [(not (download-raven ver))
+          (printf "install raven ~a fail\n" ver)]
+        [windows?
+          (printf "The script has been downloaded in ~a\\raven\nYou should add this path to the system variables PATH before you enjoy the raven\n" target-path)
+          (printf "install raven ~a success\n" ver)]
+        [else
+          (delete-if-exists "/usr/local/bin/raven")
+          (if (and (run! "ln -s /usr/local/lib/raven/raven/raven.sc /usr/local/bin/raven")
+                   (run! "chmod +x /usr/local/bin/raven"))
+            (printf "install raven ~a success\n" ver)
+            (printf "install raven ~a fail: cannot link /usr/local/bin/raven\n" ver))])]))
 
 ;;; Helper End
 

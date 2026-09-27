@@ -59,12 +59,18 @@
             (loop (cdr ls) space)))))
 
 (define (write-package-file path asl)
-  (delete-file path)
-  (call-with-output-file path 
-    (lambda (p) 
-      (display #\( p)
-      (write-asl-format p asl 0)
-      (display #\) p))))
+  ;; Write to a temporary file first so an error cannot leave package.sc truncated
+  (let ([tmp (string-append path ".tmp")])
+    (when (file-exists? tmp)
+      (delete-file tmp))
+    (call-with-output-file tmp
+      (lambda (p) 
+        (display #\( p)
+        (write-asl-format p asl 0)
+        (display #\) p)))
+    (when (file-exists? path)
+      (delete-file path))
+    (rename-file tmp path)))
 
 ;;; Association List End
 
@@ -591,10 +597,12 @@
 (define raven-ignore-scripts? #f)
 
 (define raven-version
-  (let ([path (format "~a/raven/~a" raven-global-path raven-pkg-file)])
-    (if (file-exists? path)
-        (asl-ref (package-sc->scm path) "version" "")
-        "unknown")))
+  ;; Read from the global installation, or from package.sc next to this script
+  (let ([paths (list (format "~a/raven/~a" raven-global-path raven-pkg-file)
+                     (format "~a/~a" (path-parent (car (command-line))) raven-pkg-file))])
+    (cond
+      [(find file-exists? paths) => (lambda (path) (asl-ref (package-sc->scm path) "version" "unknown"))]
+      [else "unknown"])))
 
 ;;; Info End
 
